@@ -1,0 +1,17 @@
+Trolly Valley
+
+(c) 2003-2010 Mikko Keinänen
+
+Trolly Valley is an arcade adventure game for Commodore 64. I started learning 6502
+Assembly language in 2003 by programming this game. Well, at first I started by
+studying some book that I alredy purchased in the 1980's.
+
+I haven't continued this actively since I started to study Computer Science in
+2004. I did  some improvements in 2007 and released a preview version in CSDB.
+I did more improvements in 2009 and released a second enchanced preview
+version in CSDB. Now, in late 2010 I'm having a fever, and the cure is to do
+some assembler hacking on the 6502!
+
+The tools
+
+- 64tass	http://singularcrew.hu/64tass/
