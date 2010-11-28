@@ -1,17 +1,26 @@
 Trolly Valley
 
-(c) 2003-2010 Mikko Keinänen
+(c) 2003-2010 Mikko Keinänen (aka sabreman @ csdb)
 
 Trolly Valley is an arcade adventure game for Commodore 64. I started learning 6502
 Assembly language in 2003 by programming this game. Well, at first I started by
 studying some book that I alredy purchased in the 1980's.
 
 I haven't continued this actively since I started to study Computer Science in
-2004. I did  some improvements in 2007 and released a preview version in CSDB.
+2004. I did  some improvements in 2007 and released a preview version in CSDb.
 I did more improvements in 2009 and released a second enchanced preview
-version in CSDB. Now, in late 2010 I'm having a fever, and the cure is to do
+version in CSDb. Now, in late 2010 I'm having a fever, and the only cure is to do
 some assembler hacking on the 6502!
 
-The tools
+I would like already to thank all those encouraging comments from some 
+sceners at CSDb (bugjam, Jammer, ...), Lauri, laama and others. 
+
+The project can be compiled, written to disk image and run using the provided buildnrun bash script. The script requires a Linux operating system and the following tools installed in the $PATH:
 
 - 64tass	http://singularcrew.hu/64tass/
+- puCrunch	http://www.cs.tut.fi/~albert/Dev/pucrunch/  
+- c1541		http://www.viceteam.org/
+- x64		http://www.viceteam.org/
+
+
+
