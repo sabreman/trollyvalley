@@ -486,11 +486,9 @@ LOADAT
          ; setlfs kernal routine call
          LDA #$0F
          LDX #$08
-         ; following secondary address
-         ; / command number must be set 
-         ; to 0 for load kernal routine
-         ; to locate the loaded data
-         ; as I want it!!!
+
+         ; secondary address 
+         ; select from 0...14 for buffer
          LDY #$00 
          JSR $FFBA
 

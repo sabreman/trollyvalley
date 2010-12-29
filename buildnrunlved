@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# Script for compiling, compressing, making a disk image and running 
+# Trolly Valley, an arcade adventure game for Commodore 64
+# (c) Mikko Keinänen
+
+if ! which 64tass >/dev/null
+then
+	echo "64 tass missing"
+	exit 1
+fi
+
+if ! which pucrunch >/dev/null 
+then
+	echo "puCrunch missing"
+	exit 1 
+fi
+
+if
+    [ -f lvedit.old.d64 ]
+then
+    rm lvedit.old.d64
+fi 
+
+if 
+    [ -f lvedit.d64 ]
+then
+    cp lvedit.d64 lvedit.old.d64
+fi
+
+if 64tass -o mtmp src/newlvledit.asm
+then
+	echo "Source compiled"
+else 
+	exit $?
+fi
+
+if pucrunch -ffast -x 32768 mtmp > mo
+then 
+	echo "Source packed"
+else 
+	exit $?
+fi
+
+if which c1541 >/dev/null
+then
+	if c1541 -format lvedit,mo d64 lvedit.d64 -write data/troll -write mo -write data/chr
+	then 
+		echo "Disk image created!" 
+	else 
+		exit $?  
+	fi 
+else
+	echo "Cannot create a disk image, c1541 missing."
+fi
+
+
+if which x64 >/dev/null
+then
+	echo "Running disk image"
+	x64 lvedit.d64
+else
+	echo "Cannot run disk image, x64 missing!"
+fi
+
+exit 0
