@@ -2,7 +2,7 @@
 ; TROLLY VALLEY
 ;
 ; LICENSED UNDER GPL
-; (C) MIKKO KEINÄNEN 2004-2008
+; (C) MIKKO KEINÄNEN 2004-2010
 ;--------------------------------------
 ;------------------------------------------------
 ; To add a sprite object
@@ -296,8 +296,8 @@ JOYSTICK = $DC00
          *= $8000 
 ; initializing:
          JSR SETMEM 
-	 JSR LOADAT 
-	 JSR INIT
+         JSR LOADAT 
+         JSR INIT
          JSR INITGFX
          JSR TITLESCR
          
@@ -319,7 +319,7 @@ JOYSTICK = $DC00
 ;======================================
 
 MAINLOOP
-	; check timing from raster beam
+        ; check timing from raster beam
          LDA RASTER
          CMP #$FF
          BNE MAINLOOP
@@ -348,11 +348,11 @@ ISFALL
          JSR MOOFALL
          JMP PASSJ
 ISFIGHT
-	;check if fight bit is set
-	lsr a
-	lsr a
-	bcc readj
-	jsr animfight
+        ;check if fight bit is set
+        lsr a
+        lsr a
+        bcc readj
+        jsr animfight
 
 READJ
          JSR READJOY
@@ -378,10 +378,10 @@ SETMEM
 ; NEW INI
 ;--------------------------------------
 NEWINI
-	 ; clear sprites
-	 JSR CLEARSPR
+         ; clear sprites
+         JSR CLEARSPR
          JSR INIT
-	 ; draw title screen
+         ; draw title screen
          JSR TITLESCR
          JSR INITROOM
          JSR INIENEMY
@@ -393,24 +393,24 @@ NEWINI
 ;--------------------------------------
 INIT
          LDA #$00
-	 ; clear all moomin state bits
+         ; clear all moomin state bits
          STA MOOSTATE
-	 ; clear all collision bits
+         ; clear all collision bits
          STA MOOCOLL
-	 ; clear jump counter
+         ; clear jump counter
          STA JMPCNT
 
          STA SPRDISPLAY
          STA SPRMULTICOL
-	 ; reset score
+         ; reset score
          STA SCORE
-	 ; reset sound state
+         ; reset sound state
          STA SNDSTATE
          STA SND1CNT
-	 STA ACTBITS
+         STA ACTBITS
 
-	; starting room is $00
-	;lda #$1e
+        ; starting room is $00
+        ;lda #$1e
          ;STA ROOM --> actually this is set int the titlescreen sbr
 
          LDA #$02
@@ -432,8 +432,8 @@ INIT
          LDA #$04
          STA BLKPNHI
 
-	; initial x and y location for
-	; moomin spriteobj
+        ; initial x and y location for
+        ; moomin spriteobj
          LDX #$80
          LDY #$D0
          STX INIXLOC
@@ -472,8 +472,8 @@ INITOSTA
          JMP INITOSTA
          
 INITCON
-	 JSR SNDCLR
-	 JSR COLLOFF
+         JSR SNDCLR
+         JSR COLLOFF
          RTS
 
 ;--------------------------------------
@@ -734,51 +734,51 @@ INITROOM
 ;--------------------------------------
 CHGROOM 
          ; check x-location to left
-	 ; if <$10 change to left
+         ; if <$10 change to left
          LDA MOOX
          CMP #$10
-	 BCS CHGROOML
-	 JSR CHRMLF
-	 rts
+         BCS CHGROOML
+         JSR CHRMLF
+         rts
 CHGROOML
-	 ; check x-location to right
-	 ; if >$fd change to right
+         ; check x-location to right
+         ; if >$fd change to right
          CMP #$FD
          BCC CHGROOMC
-	 JSR CHRMRG
-	 rts
+         JSR CHRMRG
+         rts
 CHGROOMC
-	; check y-location to up
-	; if climbable bit is set...
-	LDA MOOCOLL
-	AND #$10
-	BEQ CHGROOMU
+        ; check y-location to up
+        ; if climbable bit is set...
+        LDA MOOCOLL
+        AND #$10
+        BEQ CHGROOMU
 
-	; ...load moomin y-location
-	; if it's less
-	; than $30 change room 
-	LDA MOOY
-	CMP #$30
-	BCS CHGROOMU
-	JSR CHRMUP
-	rts	
-	;...else
+        ; ...load moomin y-location
+        ; if it's less
+        ; than $30 change room 
+        LDA MOOY
+        CMP #$30
+        BCS CHGROOMU
+        JSR CHRMUP
+        rts        
+        ;...else
 CHGROOMU
          ; check y-location,
-	 ; if it's less
-	 ; than $20 change room 
+         ; if it's less
+         ; than $20 change room 
          LDA MOOY
          CMP #$20
          BCS CHGROOMD
-	 JSR CHRMUP
-	 RTS
+         JSR CHRMUP
+         RTS
 CHGROOMD
-	 ; if y-location is more than $E0
-	 ; change room
+         ; if y-location is more than $E0
+         ; change room
 
          CMP #$E0
          BCC CHGEXIT
-	 JSR CHRMDW
+         JSR CHRMDW
 CHGEXIT
          RTS
 
@@ -794,7 +794,7 @@ CHRMINI
          STA INIXLOC
          LDA MOOY
          STA INIYLOC
-	 ; initialize room and enemies 
+         ; initialize room and enemies 
          JSR INITROOM
          JSR INIENEMY
          RTS
@@ -808,19 +808,19 @@ CHRMLF
          CMP #$FF
          BEQ CHRMLFX
          STX PREVROOM
-	 STA ROOM
+         STA ROOM
          ; sets new x location to $EA
          LDA #$EA
          STA MOOX
-	 JSR CHRMINI
+         JSR CHRMINI
 CHRMLFX
-	RTS
+        RTS
 ;--------------------------------------
 ; CHANGE ROOM TO RIGHT 
 ;--------------------------------------
 CHRMRG
-	 INC BORDERCOL
-	 LDX ROOM
+         INC BORDERCOL
+         LDX ROOM
          LDA EXITRGT,X
          CMP #$FF
          BEQ CHRMRGX
@@ -829,53 +829,53 @@ CHRMRG
          ; sets new X location to $1F
          LDA #$1F
          STA MOOX
-	 JSR CHRMINI
+         JSR CHRMINI
 CHRMRGX
-	RTS
+        RTS
 
 ;--------------------------------------
 ; CHANGE ROOM TO UP 
 ;--------------------------------------
 CHRMUP
-	; set current room id
-	; to x-reg
-	LDX ROOM
+        ; set current room id
+        ; to x-reg
+        LDX ROOM
 
-	;load id for next room up
+        ;load id for next room up
          LDA EXITUP,X
-	 ; if room id is $FF
-	 ; no need to change room
+         ; if room id is $FF
+         ; no need to change room
          CMP #$FF
          BEQ CHRMUPX
-	; store current room
-	; as previous room
-	STX PREVROOM
-	;set new room as current room
+        ; store current room
+        ; as previous room
+        STX PREVROOM
+        ;set new room as current room
          STA ROOM
 
-	; set new y-location
+        ; set new y-location
          LDA #$D0
          STA MOOY
-	 JSR CHRMINI
+         JSR CHRMINI
 CHRMUPX
-	RTS
+        RTS
 
 ;--------------------------------------
 ; CHANGE ROOM TO DOWN 
 ;--------------------------------------
 CHRMDW
-	LDX ROOM
+        LDX ROOM
         LDA EXITDWN,X
         CMP #$FF
         BEQ CHRMDWX
         STX PREVROOM
         STA ROOM
-	; set new y-location
+        ; set new y-location
         LDA #$30
         STA MOOY
-	JSR CHRMINI
+        JSR CHRMINI
 CHRMDWX
-	RTS
+        RTS
 
 ;--------------------------------------
 ; ROOM DATA
@@ -884,7 +884,7 @@ LDRMDAT
          LDX ROOM
          LDY #$00
          STY TMP
-	; load start address of room data area
+        ; load start address of room data area
          ;LDA #$00
          LDA #<LVLDATA 
          STA LVCHLO
@@ -892,9 +892,9 @@ LDRMDAT
          ;LDA #$40
          LDA #>LVLDATA
          STA LVCHI
-	 ; jump over first byte
-	 ; that indicates the amount of char
-    	 ; indicated by the second byte
+         ; jump over first byte
+         ; that indicates the amount of char
+             ; indicated by the second byte
          CLC
          LDA LVCHLO
          ADC #$01
@@ -904,8 +904,8 @@ LDRMDAT
          STA LVCHI
 
 INITROLO
-	 ; is TMP equal to room we are loading
-	 ; (TMP is here a room number counter)
+         ; is TMP equal to room we are loading
+         ; (TMP is here a room number counter)
          LDA TMP
          CMP ROOM
          BEQ INITROOX
@@ -913,10 +913,10 @@ INITROLO
          LDA (LVCHLO),Y
          CMP #$FF ; if room data end sign
          BEQ INITROL2
-	 ; point to next char
-	 ; (first byte is amount of char that
-	 ; is located in the second byte, so we jump
-	 ; to next char by adding $02 to pointer)
+         ; point to next char
+         ; (first byte is amount of char that
+         ; is located in the second byte, so we jump
+         ; to next char by adding $02 to pointer)
          CLC
          LDA LVCHLO
          ADC #$02
@@ -941,9 +941,9 @@ INITROL2 ; set tmp for next room
          JMP INITROLO
 
 INITROOX ; room data area found!
-	 ; move pointer back to 1st byte
+         ; move pointer back to 1st byte
          ; that indicates the amount of
-	 ; chars indicated by 2nd byte
+         ; chars indicated by 2nd byte
          SEC
          LDA LVCHLO
          SBC #$01
@@ -963,9 +963,9 @@ INITROOXX RTS
 DRAWLVL
          JSR CLEARSCR
          
-	 ; screen memory pointer
-	 ; to start address of screen
-	 ; memory
+         ; screen memory pointer
+         ; to start address of screen
+         ; memory
          LDA #$00
          STA SCRLO
          LDA #$04
@@ -1045,11 +1045,11 @@ DRWCHRLX
 
 DRAWLVX
          ; Set bg color:
-	 ; 1. get room type
+         ; 1. get room type
          LDY ROOM
-	 lda roomtype,y
-	 tay
-	 ; get bg-color for room type in y
+         lda roomtype,y
+         tay
+         ; get bg-color for room type in y
          lda rmtypecb,y ;LDA COLBG,Y
          STA SCREENCOL
          
@@ -1200,7 +1200,7 @@ UPANEL
          JSR UPITEMS
          JSR DISPITEM
          JSR UPLIVES
-	 jsr upscore
+         jsr upscore
          RTS
 
 ;--------------------------------------
@@ -1208,14 +1208,14 @@ UPANEL
 ;--------------------------------------
 UPLIVES
          ; Start address of energy
-	 ; display at screen memory
+         ; display at screen memory
          LDX #$BE
          STX SCRLO
          LDY #$04
          STY SCRHI
-	 lda lives
-	 sta tmp         
-	 jsr printnum
+         lda lives
+         sta tmp         
+         jsr printnum
 
          ; clear lives
          ;LDY #$09
@@ -1230,20 +1230,20 @@ UPLIVES
          
          ;JSR GETCOLM
  
-	 ; if more than 9 lives
-	 ; load 9 to Y
+         ; if more than 9 lives
+         ; load 9 to Y
 
-	 ;LDA LIVES
-	 ;CMP #$09
-	 ;BCC UPLIVES1
-	 ;LDY #$09 
-	 ;JMP UPLIVLOB
+         ;LDA LIVES
+         ;CMP #$09
+         ;BCC UPLIVES1
+         ;LDY #$09 
+         ;JMP UPLIVLOB
 
 ;UPLIVES1
-	 ; set amount of lives to Y
+         ; set amount of lives to Y
          ;LDY LIVES
 
-	 ; set live icons to display
+         ; set live icons to display
 ;UPLIVLOB ;LDA #$1C ; live symbol
          ;STA (SCRLO),Y
          ;LDA #$02 ; color
@@ -1256,15 +1256,15 @@ UPLIVES
 ; UPDATES THE SCORE DISPLAY @ $050E
 ;--------------------------------------
 UPSCORE
-	;;;lo-/hitmp	
+        ;;;lo-/hitmp        
 
-	lda #$0E
-	sta scrlo
-	lda #$05
-	sta scrhi 
-	lda score
-	sta tmp
-	jsr printnum 
+        lda #$0E
+        sta scrlo
+        lda #$05
+        sta scrhi 
+        lda score
+        sta tmp
+        jsr printnum 
         RTS
 
 ;--------------------------------------
@@ -1343,17 +1343,17 @@ DISPITEM
          ; location in screen memory
          STA ITEMHOLDER
 
-	
-	; load low byte of the description data location
-	LDY OBJDSCHI,X
+        
+        ; load low byte of the description data location
+        LDY OBJDSCHI,X
 
-	; load high byte of the description data location
-	LDA OBJDSCLO,X
-	TAX
-	JSR WRITEMSG
+        ; load high byte of the description data location
+        LDA OBJDSCLO,X
+        TAX
+        JSR WRITEMSG
 
-	; print description at screen
-	
+        ; print description at screen
+        
          RTS
 DISPNULL
          JSR DISPITCL 
@@ -1369,52 +1369,52 @@ DISPNULL
 ; - location must be set to 'scrlo/-hi'
 ; - value must be set to 'tmp'
 ; - uses also 
-;	- regs: x,y
-; 	- tmp2
+;        - regs: x,y
+;         - tmp2
 ;--------------------------------------
 printnum
-	ldy #$00 ; y is screen memory index (0...2)
-	; x keeps count how many times can be divided by
-	; 100/10 
-	ldx #$00
-	sec ; set c-flag for substraction	
-	lda tmp
+        ldy #$00 ; y is screen memory index (0...2)
+        ; x keeps count how many times can be divided by
+        ; 100/10 
+        ldx #$00
+        sec ; set c-flag for substraction        
+        lda tmp
 printnumlo1
-	sta tmp2 ; store result before substraction
-	sbc #$64 ; 100
-	bcc printnum2 ; got below 0
-	inx
-	jmp printnumlo1
+        sta tmp2 ; store result before substraction
+        sbc #$64 ; 100
+        bcc printnum2 ; got below 0
+        inx
+        jmp printnumlo1
 
 printnum2 
-	; show hundreds (x-reg)
-	clc
-	txa
-	adc #$30 ; add $30 to get a real number to display
-	sta (SCRLO),y ; screen mem. loc #1
-	iny
-	ldx #$00
-	lda tmp2 ; get the result before it went under 0
-	sec
+        ; show hundreds (x-reg)
+        clc
+        txa
+        adc #$30 ; add $30 to get a real number to display
+        sta (SCRLO),y ; screen mem. loc #1
+        iny
+        ldx #$00
+        lda tmp2 ; get the result before it went under 0
+        sec
 printnumlo2
-	sta tmp2 ; store result before substraction 
-	sbc #$0a ; 10	
-	bcc printnum3 ; < 0
-	inx
-	jmp printnumlo2
+        sta tmp2 ; store result before substraction 
+        sbc #$0a ; 10        
+        bcc printnum3 ; < 0
+        inx
+        jmp printnumlo2
 
-printnum3 ; show tens (x-reg)	
-	clc
-	txa
-	adc #$30
-	sta (SCRLO),y
-	iny
-	; show rest
-	clc
-	lda tmp2
-	adc #$30
-	sta (SCRLO),y
-	rts
+printnum3 ; show tens (x-reg)        
+        clc
+        txa
+        adc #$30
+        sta (SCRLO),y
+        iny
+        ; show rest
+        clc
+        lda tmp2
+        adc #$30
+        sta (SCRLO),y
+        rts
 
 ;--------------------------------------
 ; GET COLOR MEMORY POINTER
@@ -1469,8 +1469,8 @@ DRWCHCOL
          ; in LOTMP/HITMP
 
          JSR GETCOLM
-	 
-	 ; and get and set the right char colour
+         
+         ; and get and set the right char colour
          LDA CHARCOLS,Y
          LDY #$00
          STA (LOTMP),Y
@@ -1553,12 +1553,12 @@ COLCHR
          SBC #$00
          STA HITMP
 
-	 ; compare if HITMP is under $04
-	 ; then the pointer points out of char data 
-	 ; starting from 0400
-	 lda hitmp
-	 cmp #$04
-	 bcc colchrx ; hitmp < $04
+         ; compare if HITMP is under $04
+         ; then the pointer points out of char data 
+         ; starting from 0400
+         lda hitmp
+         cmp #$04
+         bcc colchrx ; hitmp < $04
 
          ; collision for dangerous objs
          JSR COLDNG
@@ -1671,13 +1671,13 @@ COLCLIMB ;-----------------------------
 
 COLCLILO ;-----------------------------
          ; load char from LADCHR-table
-	 ; to be compared -
+         ; to be compared -
          ; if same char is found at the
-	 ; position compared
+         ; position compared
          ; the collision bit is set
          ; (climbing IS allowed!)
          ; leave if $00 (end mark in 
-	 ; the table)
+         ; the table)
          ;-----------------------------
          
          LDA LADCHR,X
@@ -1692,26 +1692,26 @@ COLCLILO ;-----------------------------
          ; them.
          ;-----------------------------
 
-	 ; LO/HITMP points to
-	 ; char above current location
+         ; LO/HITMP points to
+         ; char above current location
          LDY #$00
          LDA (LOTMP),Y
          CMP TMPCHR
          BEQ COLCLUSET
          
-	 ; char next to previous location
+         ; char next to previous location
          INY 
          LDA (LOTMP),Y
          CMP TMPCHR
          BEQ COLCLUSET
 
-	 ; char at current location
+         ; char at current location
          LDY #$28
          LDA (LOTMP),Y
          CMP TMPCHR
          BEQ COLCLUSET
          
-	 ; char next to previous location
+         ; char next to previous location
          INY 
          LDA (LOTMP),Y
          CMP TMPCHR
@@ -1881,78 +1881,78 @@ COLDWX
 ;--------------------------------------
 
 COLTRS 
-	; if moomin is already carrying
-	; something, leave
-	LDA MOOHOLDS
+        ; if moomin is already carrying
+        ; something, leave
+        LDA MOOHOLDS
         CMP #$FF
-	bne coltrx
-	  
-	 ; x is used as index for a datatable
-	 ; x is set to 0 when loop starts
+        bne coltrx
+          
+         ; x is used as index for a datatable
+         ; x is set to 0 when loop starts
          LDX #$ff
-COLTRLO	
- 	 ;Sets current char block 
+COLTRLO        
+          ;Sets current char block 
          ;location from BLKPNLO/-HI to
          ;temporary location pointer
          ;LO-/HITMP.
-	 ; this must be reset during each loop round 
+         ; this must be reset during each loop round 
          
          LDA BLKPNLO
          STA LOTMP
          LDA BLKPNHI
          STA HITMP
 
-	inx
-	; check if current room is listed in
-	; the objroom dynamic table
+        inx
+        ; check if current room is listed in
+        ; the objroom dynamic table
 
-	lda objroom,x
-	; exit if end sign $ff found!
-	cmp #$ff
-	beq coltrx
-	cmp room ; current room
-	bne coltrlo
+        lda objroom,x
+        ; exit if end sign $ff found!
+        cmp #$ff
+        beq coltrx
+        cmp room ; current room
+        bne coltrlo
 
-	; room matched!  check
-	; if the location matched in the
-	; objlo/-hi tables, using x as index
+        ; room matched!  check
+        ; if the location matched in the
+        ; objlo/-hi tables, using x as index
 
-	; if location matches, THEN the item
-	; can be picked up!
+        ; if location matches, THEN the item
+        ; can be picked up!
 
-	; compare objlo/-hi to lo-/ hitmp
-	; increasing lo-/hitmp to 0...2
+        ; compare objlo/-hi to lo-/ hitmp
+        ; increasing lo-/hitmp to 0...2
 
-	; y is a screen memory index
- 	ldy #$ff
+        ; y is a screen memory index
+         ldy #$ff
 COLTRLO2
-	iny
-	cpy #$03
-	beq coltrlo
+        iny
+        cpy #$03
+        beq coltrlo
 
-	; add value of y to lo-/hitmp
-	clc
-	tya
-	adc lotmp
-	sta lotmp
-	lda #$00
-	adc hitmp
-	sta hitmp
-	
-	; compare objlo/-hi to lo-/ hitmp
+        ; add value of y to lo-/hitmp
+        clc
+        tya
+        adc lotmp
+        sta lotmp
+        lda #$00
+        adc hitmp
+        sta hitmp
+        
+        ; compare objlo/-hi to lo-/ hitmp
 
-	lda objhi,x
-	cmp hitmp
-	bne coltrlo2
-	lda objlo,x
-	cmp lotmp
-	bne coltrlo2
+        lda objhi,x
+        cmp hitmp
+        bne coltrlo2
+        lda objlo,x
+        cmp lotmp
+        bne coltrlo2
 
-	; loops coltrlo and coltrlo2 end
+        ; loops coltrlo and coltrlo2 end
 
-	; location matched!
-	; item can be picked up!
-	JSR TREASURE
+        ; location matched!
+        ; item can be picked up!
+        JSR TREASURE
 COLTRX
         RTS
 
@@ -1967,18 +1967,18 @@ COLTRX
 ;--------------------------------------
 TREASURE 
          LDA #$FE ; $FE means NULL here
-	 ; set item locations at screen memory to null
-	 ; and set room location to null
+         ; set item locations at screen memory to null
+         ; and set room location to null
          STA OBJLO,X
          STA OBJHI,X
          STA OBJROOM,X
 
-	; replace object char with background char
+        ; replace object char with background char
          LDA OBJCHRU,X
          LDY #$00
          STA (LOTMP),Y
 
-	; set item index to mooholds
+        ; set item index to mooholds
          STX MOOHOLDS
          
          ; play sound
@@ -1986,7 +1986,7 @@ TREASURE
          JSR SFXINIT
          
          JSR DISPITEM
-	 inc score
+         inc score
          JSR UPSCORE
 
 TREASURX RTS         
@@ -2020,8 +2020,8 @@ COLDNLO
          JMP COLDNLO
 
 COLDNSET
-	 lda #$05 ; set damage to tmp
-	 sta tmp
+         lda #$05 ; set damage to tmp
+         sta tmp
          JSR DECLIVES
          JSR INITMOO
 
@@ -2092,8 +2092,8 @@ STAIRLOX
 ; putoaa plaformilta!
 
 ;--------------------------------------
-OBJCOLL 	
-	; if not sprobj's at screen leave
+OBJCOLL         
+        ; if not sprobj's at screen leave
          LDA SPRCNT
          BEQ OBJCOLX
  
@@ -2104,14 +2104,14 @@ OBJCOLL
          AND #$FD ;1111 1101
          STA ACTBITS
 
-	 ; x is index for the loop
+         ; x is index for the loop
          LDX #$00
 
          ;-----------------------------
          ; Loop to check the sprite
          ; objects in current room.
-	 ; compare moomin location 
-	 ; to sprobj's collision area
+         ; compare moomin location 
+         ; to sprobj's collision area
          ;-----------------------------
 OBJCOLO
          LDA OBJCOLX1,X
@@ -2134,16 +2134,16 @@ OBJCOLO
          ; collision has happened!
          ;-----------------------------
 
-	; check if enemy sprobj
-	;LDA OBJSTA,X
-	;AND 
+        ; check if enemy sprobj
+        ;LDA OBJSTA,X
+        ;AND 
 
-	;-----------------------------
-	 ; check if this is a
+        ;-----------------------------
+         ; check if this is a
          ; blocking object (door,
          ; boulder, etc.) from
          ; OBJSPST (originally from
-	 ; SPRSTA) bit 2.
+         ; SPRSTA) bit 2.
          ;-----------------------------         
          LDA OBJSPST,X
          LSR A
@@ -2157,8 +2157,8 @@ OBJCOLO
          ;-----------------------------
          JSR BLOCKOBJ
          ;RTS
-	 ;test:
-	 JMP OBJCOLON
+         ;test:
+         JMP OBJCOLON
          
 OBJCOLPF ;-----------------------------
          ; no, not a blocking object
@@ -2169,8 +2169,8 @@ OBJCOLPF ;-----------------------------
          BCC OBJCOLE
          JSR PLATFOBJ
          ;RTS
-	 ;test:
-	 JMP OBJCOLON
+         ;test:
+         JMP OBJCOLON
          
 OBJCOLE  ;-----------------------------
          ; Check if object
@@ -2183,33 +2183,33 @@ OBJCOLE  ;-----------------------------
          ;-----------------------------
          ; collision happened with 
          ; enemy object
-	 ;-----------------------------
-	 ; check if fight mode is on
-	 ; and the directions so that 
-	 ; moomin is facing enemy object
+         ;-----------------------------
+         ; check if fight mode is on
+         ; and the directions so that 
+         ; moomin is facing enemy object
 
-	 LDA MOOSTATE ; if state is 1xxx xxxx
-	 AND #$80 ; 1000 0000
-	 BEQ OBJCOLE2 ; fight state is not set 
-	
-	
-	jsr FIGHTENEMY ;fight state is set
-	rts
-	 
+         LDA MOOSTATE ; if state is 1xxx xxxx
+         AND #$80 ; 1000 0000
+         BEQ OBJCOLE2 ; fight state is not set 
+        
+        
+        jsr FIGHTENEMY ;fight state is set
+        rts
+         
 OBJCOLE2
-	 ;-----------------------------
-	 ; decrease
+         ;-----------------------------
+         ; decrease
          ; lives, initialize moomin and
          ; enemy objects and leave sbr
          ;-----------------------------
-	 
-	; check if cheat mode is on
-	lda MOOCOLL
-	and #$80 ; 10000000
-	beq OBJCOLXX
+         
+        ; check if cheat mode is on
+        lda MOOCOLL
+        and #$80 ; 10000000
+        beq OBJCOLXX
 
-	 lda #$01 ; set damage to tmp
-	 sta tmp
+         lda #$01 ; set damage to tmp
+         sta tmp
          JSR DECLIVES
          ;JSR INITMOO
          ;JSR INIENEMY
@@ -2221,8 +2221,8 @@ OBJCOLN  ;-----------------------------
 
          JSR HEYMATE
          RTS
-	;debug:
-	;JSR DEBUG
+        ;debug:
+        ;JSR DEBUG
 
 
 OBJCOLON ;-----------------------------
@@ -2237,66 +2237,66 @@ OBJCOLX
          RTS
 
 OBJCOLXX inc BORDERCOL
-	 rts
+         rts
 
 ;--------------------------------------
 FIGHTENEMY
 ; x contains the index of this sprite object
 ; for property tables
 ;--------------------------------------
-	; if enemy x is less than moomin x
-	; and moomin is facing left
-	; or if enemy x is more than moomin x
-	; and moomin is facing right
-	; reverse the moving direction of enemy object
-	
-	; continue only if moving bit (2nd bit) 
-	;  is set for the enemy obj
-	LDA OBJSTA,X
-	LSR A
-	LSR A
-	BCC FIGHTENEMYX
+        ; if enemy x is less than moomin x
+        ; and moomin is facing left
+        ; or if enemy x is more than moomin x
+        ; and moomin is facing right
+        ; reverse the moving direction of enemy object
+        
+        ; continue only if moving bit (2nd bit) 
+        ;  is set for the enemy obj
+        LDA OBJSTA,X
+        LSR A
+        LSR A
+        BCC FIGHTENEMYX
 
-	; check directions from sprite object state OBJSTA
-	; if bit 2 (3rd bit) is set -> facing left
-	; if bit 4 is set -> facing right
-	lda objsta,x
-	and #$04 ; 0000 0100
+        ; check directions from sprite object state OBJSTA
+        ; if bit 2 (3rd bit) is set -> facing left
+        ; if bit 4 is set -> facing right
+        lda objsta,x
+        and #$04 ; 0000 0100
         beq FIGHTENEMYR ; left bit is not set
-	;left bit is set, moomin must be facing right
-	lda moostate
-	and #$02
-	beq FIGHTENEMYR ; moomins right bit is not set 
-	; moomin is facing enemy object
-	jmp FIGHTENEMYOK
+        ;left bit is set, moomin must be facing right
+        lda moostate
+        and #$02
+        beq FIGHTENEMYR ; moomins right bit is not set 
+        ; moomin is facing enemy object
+        jmp FIGHTENEMYOK
 FIGHTENEMYR
-	lda objsta,x
-	and #$08
-	beq FIGHTENEMYX ;right bit is not set
-	; right bit is set, moomin must be facing left
-	lda moostate
-	and #$02
-	bne FIGHTENEMYX ; moomin is not facing left
-	
-	; must be moving at l/r-direction
-	; (3rd or 4th bit must be set)
-	;LDA OBJSTA,X
-	;AND #$0C   ;00001100
-	;BEQ FIGHTENEMYX
+        lda objsta,x
+        and #$08
+        beq FIGHTENEMYX ;right bit is not set
+        ; right bit is set, moomin must be facing left
+        lda moostate
+        and #$02
+        bne FIGHTENEMYX ; moomin is not facing left
+        
+        ; must be moving at l/r-direction
+        ; (3rd or 4th bit must be set)
+        ;LDA OBJSTA,X
+        ;AND #$0C   ;00001100
+        ;BEQ FIGHTENEMYX
 FIGHTENEMYOK
-	LDA OBJSTA,X
+        LDA OBJSTA,X
         EOR #$0C ; 00001100 ; reverse l/r bits
         STA OBJSTA,X
-	; play hit sound 
-	; store x-reg
-	stx tmp ; is tmp free?
-	; set rigt sfx number to x
-	ldx #$05
-	jsr sfxinit
-	; restore x-reg
-	ldx tmp
+        ; play hit sound 
+        ; store x-reg
+        stx tmp ; is tmp free?
+        ; set rigt sfx number to x
+        ldx #$05
+        jsr sfxinit
+        ; restore x-reg
+        ldx tmp
 FIGHTENEMYX
-	rts
+        rts
 
 ;--------------------------------------
 ; PLATFORM OBJECT
@@ -2317,22 +2317,22 @@ PLATFOBJ
          ; to moomins y-location.
          LDA OBJY,X
          CMP MOOY
-	 ; if platform y location is greater
-	 ; than moomin y location
+         ; if platform y location is greater
+         ; than moomin y location
          BCS PLATFOBJ2
          RTS
 
 PLATFOBJ2         
-	 ; move moomin sprite
-	 ; if platform is also moving
-	 ; -> is platform movement speed counter set to 0
-	 ; (OBJSPCNT,X = 0) otherwise exit
+         ; move moomin sprite
+         ; if platform is also moving
+         ; -> is platform movement speed counter set to 0
+         ; (OBJSPCNT,X = 0) otherwise exit
 
-	 LDA OBJSPCNT,X
-	 BEQ PLATFSET
-	 ; set platform collision bits
-	 JSR PLATFS2
-	 RTS
+         LDA OBJSPCNT,X
+         BEQ PLATFSET
+         ; set platform collision bits
+         JSR PLATFS2
+         RTS
 
 PLATFSET
                   
@@ -2361,7 +2361,7 @@ PLATFLF
          LDA MOOCOLL
          LSR A
 
-	 ; exit if collision left bit set
+         ; exit if collision left bit set
          BCS PLATFOX
          
          ; check platform location
@@ -2372,7 +2372,7 @@ PLATFLF
          BEQ PLATFS2
          BCC PLATFS2
         
-	 ; calculate new x location for moomin
+         ; calculate new x location for moomin
          SEC
          LDA MOOX ; moo x
          SBC TMP
@@ -2468,7 +2468,7 @@ PLATFCL
          STA FALLDCNT
          
          ; set action bit 1
-	 ; = moving on platform
+         ; = moving on platform
          LDA ACTBITS
          ORA #$02
          STA ACTBITS
@@ -2525,15 +2525,15 @@ HEYMATE
          STX TMP
          
          ; store the item id (index) to X
-	 ; (the item moomin is holding)
+         ; (the item moomin is holding)
          LDX MOOHOLDS
          
          ; load the needed item id of the colliding 
-	 ; sprite object 
+         ; sprite object 
          LDA OBJOWN,Y
 
          ; ...and compare the item value to the item 
-	 ; that moomin is carrying
+         ; that moomin is carrying
          CMP MOOHOLDS
          BEQ HEYTHX ; match!
          
@@ -2556,9 +2556,9 @@ HEYMATE
          ; to x (lo) and y (hi)
          ; and write message
          
-	 LDX MATMSGLO,Y
-	 LDA MATMSGHI,Y
-	 TAY
+         LDX MATMSGLO,Y
+         LDA MATMSGHI,Y
+         TAY
          JSR WRITEMSG
          
          ; restore x, return
@@ -2570,32 +2570,32 @@ HEYTHX   ; moomin is carrying a matching
          
          ; set this item as returned
          LDX MOOHOLDS
-	; load the byte that holds info about the found items
+        ; load the byte that holds info about the found items
          LDA ITEMSFND
-	; get the ORA byte for item X, that sets it found
+        ; get the ORA byte for item X, that sets it found
          ORA OBJORA,X
          STA ITEMSFND
-	 lda #$0a ; set amount of energy boost
-	 sta tmp
-	 JSR INCLIVES
-	; check if all the bits are set 
-	; (all the items returned)
+         lda #$0a ; set amount of energy boost
+         sta tmp
+         JSR INCLIVES
+        ; check if all the bits are set 
+        ; (all the items returned)
          CMP #$FF
          BNE HEYCON
          ; if all bits are set in 
          ; ITEMSFND game is solved!
          JSR CONGRATS
 HEYCON
-	; clear moomin's pocket
+        ; clear moomin's pocket
          LDA #$FF
          STA MOOHOLDS
         
-	; clear and
-	; update item display 
+        ; clear and
+        ; update item display 
          JSR DISPITCL
          JSR UPITEMS
 HEYTHX2  
-	; write thank you -message
+        ; write thank you -message
 
          LDX MAMTHXLO,Y
          TYA
@@ -2619,10 +2619,10 @@ DEBUG
 DEBUGLO
          INC BORDERCOL
          ; READ KEYPRESS
-	 LDA KEYPRESS
-	 CMP #$0A ; a-key
-	 BEQ DEBUGX
-	 JMP DEBUGLO
+         LDA KEYPRESS
+         CMP #$0A ; a-key
+         BEQ DEBUGX
+         JMP DEBUGLO
 DEBUGX
          RTS
          
@@ -2632,22 +2632,22 @@ DEBUGX
 ; for debugging only
 ;--------------------------------------
 INCROOM
-	LDA ROOM
-	CMP #$20 ; max+1 room id
-	BNE INCROO1
-	LDA #$00
-	JMP INCROO2
+        LDA ROOM
+        CMP #$20 ; max+1 room id
+        BNE INCROO1
+        LDA #$00
+        JMP INCROO2
 INCROO1
-	CMP #$FF
-	BNE INCROOX
-	LDA #$1D
+        CMP #$FF
+        BNE INCROOX
+        LDA #$1D
 INCROO2
-	STA ROOM
+        STA ROOM
 
-INCROOX	
-	JSR INITROOM
-	JSR INIENEMY
-	RTS
+INCROOX        
+        JSR INITROOM
+        JSR INIENEMY
+        RTS
 
         
 ;--------------------------------------
@@ -2657,13 +2657,13 @@ INCROOX
 DECLIVES
          JSR DIEFX
          sec
-	 lda lives
-	 sbc tmp
-	 bcs xlives 
+         lda lives
+         sbc tmp
+         bcs xlives 
          JSR GAMEOVER
          RTS
 XLIVES   sta lives
-	 JSR UPLIVES
+         JSR UPLIVES
          RTS
 
 ;--------------------------------------
@@ -2671,15 +2671,15 @@ XLIVES   sta lives
 ; - set amount of increase to TMP
 ;--------------------------------------
 INCLIVES
-	clc
-	lda lives
-	adc tmp
-	bcc inclivesx	
-	lda #$ff ; full energy
+        clc
+        lda lives
+        adc tmp
+        bcc inclivesx        
+        lda #$ff ; full energy
 inclivesx
-	sta lives
-	jsr uplives
-	RTS
+        sta lives
+        jsr uplives
+        RTS
 
 ;--------------------------------------
 ; LOST A LIFE EFFECTS
@@ -2719,19 +2719,19 @@ ACTION
          ; do actions by items
          ; carrying
          
-	 ldx mooholds
-	 lda objchr,x 
+         ldx mooholds
+         lda objchr,x 
          CMP #$83 ; 08 ; candle
          BEQ ACTIONC
          
          CMP #$59 ; 04 ; a key
          BEQ ACTIONK
 
-	 CMP #$1e ; 0A ; a magic scroll
-	 BEQ ACTIONS
+         CMP #$1e ; 0A ; a magic scroll
+         BEQ ACTIONS
         
-	 cmp #$1c ;0b ; moomin idol (energy booster)
-	 BEQ ACTIONI
+         cmp #$1c ;0b ; moomin idol (energy booster)
+         BEQ ACTIONI
  
          RTS
 ACTIONC  ; candle
@@ -2742,35 +2742,35 @@ ACTIONK  ; key
          JSR ACTKEY
          RTS
 ACTIONS  ; magic scroll
-	 JSR ACTMSCROLL
-	RTS
+         JSR ACTMSCROLL
+        RTS
 
 ACTIONI ; energy booster
-	JSR ACTENERGY
-	RTS
+        JSR ACTENERGY
+        RTS
 
 ;--------------------------------------
 ; ENERGY BOOSTER ACTION
 ;--------------------------------------
 ACTENERGY
-	; set amount of energy boost to TMP
-	lda #$10
-	sta tmp
-	jsr inclives
-	; remove energy booster item
-	lda #$ff
-	sta mooholds
-	jsr dispitcl
-	RTS	
+        ; set amount of energy boost to TMP
+        lda #$10
+        sta tmp
+        jsr inclives
+        ; remove energy booster item
+        lda #$ff
+        sta mooholds
+        jsr dispitcl
+        RTS        
 
 ;--------------------------------------
 ; REMOVE TOMBSTONE
 ;--------------------------------------
 ACTMSCROLL
-	LDA #$15 ; tombstone id
-	STA TMP
-	JSR OPENDOOR
-	RTS
+        LDA #$15 ; tombstone id
+        STA TMP
+        JSR OPENDOOR
+        RTS
 
 ;--------------------------------------
 ; open 'door'-sprite objects
@@ -2778,40 +2778,40 @@ ACTMSCROLL
 ; id for door-object
 ;--------------------------------------
 OPENDOOR
-	; 'door' sprite object
-	; must be available to use
-	; the 'key'
-	LDX #$00
+        ; 'door' sprite object
+        ; must be available to use
+        ; the 'key'
+        LDX #$00
 OPENDOORLO
-	LDA OBJID,X
-	CMP TMP ; 'door'-object id 
-	BEQ OPENDOORC
-	INX
-	cmp sprcnt
- 	bne opendoorlo
-	RTS
+        LDA OBJID,X
+        CMP TMP ; 'door'-object id 
+        BEQ OPENDOORC
+        INX
+        cmp sprcnt
+         bne opendoorlo
+        RTS
 OPENDOORC
-	; check if door-object is near enough
+        ; check if door-object is near enough
         ; X contains the index of sprite
         ; object.
 
-	jsr ACTRANGE
-	lda actbits
-	lsr a
-	bcs opendoorcn
-	rts
+        jsr ACTRANGE
+        lda actbits
+        lsr a
+        bcs opendoorcn
+        rts
 opendoorcn
-	jsr hideobj
-	rts
+        jsr hideobj
+        rts
 
 ;--------------------------------------
 ; OPEN DOOR WITH KEY
 ;--------------------------------------
 ACTKEY
-	lda #$0d
-	sta tmp
-	jsr opendoor
-	rts
+        lda #$0d
+        sta tmp
+        jsr opendoor
+        rts
 ;--------------------------------------
 ; BLOW UP DYNAMITE
 ;--------------------------------------
@@ -2839,8 +2839,8 @@ BLOWULO
          ;-----------------------------
          RTS
         
-	; x reg contains now index to spritte object
-	; datatables OBJxxx 
+        ; x reg contains now index to spritte object
+        ; datatables OBJxxx 
 BLOWUPX  
          ;-----------------------------
          ; check if boulder is at
@@ -2933,10 +2933,10 @@ BLOWUPOK
 FLASHFX
 
 FLASHFXLO
-	; get original colour
-	LDX BORDERCOL
-	STX TMP
-	LDX SCREENCOL
+        ; get original colour
+        LDX BORDERCOL
+        STX TMP
+        LDX SCREENCOL
 
          ; timer with raster beam
          LDA RASTER
@@ -2952,11 +2952,11 @@ FLASHFXLO
          DEY
          BNE FLASHFXLO
         
-	; restore backround and
-	; border colours
-	STX SCREENCOL
-	LDA TMP
-	STA BORDERCOL
+        ; restore backround and
+        ; border colours
+        STX SCREENCOL
+        LDA TMP
+        STA BORDERCOL
 
          RTS
 
@@ -3090,8 +3090,8 @@ ACRANOK  ;-----------------------------
 ; READ JOYSTICK
 ;--------------------------------------
 READJOY 
-	; if JOYSTICK HAS xxx11111
-	; nothing has to be done 
+        ; if JOYSTICK HAS xxx11111
+        ; nothing has to be done 
          ;-----------------------------
          ; clear moostate bits other
          ; than bit 0 (moving/not)
@@ -3100,43 +3100,43 @@ READJOY
          AND #$FE ;
          STA MOOSTATE
          
-	; read button first (5th bit)
-	LDA JOYSTICK
-	AND #$10
-	BNE UP
-	; button is pressed, go to button actions
-	JSR JOYBUTTON
-	RTS	
+        ; read button first (5th bit)
+        LDA JOYSTICK
+        AND #$10
+        BNE UP
+        ; button is pressed, go to button actions
+        JSR JOYBUTTON
+        RTS        
 UP ; move up or jump at place
-	JSR CLEARFIGHT
+        JSR CLEARFIGHT
          LDA JOYSTICK
          AND #$01
          BNE DOWN
-	;if first bit is set, move up
-	;LSR A
-	;BCS DOWN 
+        ;if first bit is set, move up
+        ;LSR A
+        ;BCS DOWN 
 
          JSR MOVEUP 
 DOWN
          LDA JOYSTICK
          AND #$02
          BNE LEFT
-	;LSR A
-	;BCS LEFT
+        ;LSR A
+        ;BCS LEFT
          JSR MOVEDOWN
 LEFT
          LDA JOYSTICK
          AND #$04
          BNE RIGHT
-	;LSR A
-	;BCS RIGHT
+        ;LSR A
+        ;BCS RIGHT
          JSR MOVELEFT
 RIGHT
          LDA JOYSTICK
          AND #$08
          BNE LEAVEJ
-	;LSR A
-	;BCS LEAVEJ
+        ;LSR A
+        ;BCS LEAVEJ
          JSR MOVERGT
 
 LEAVEJ   RTS
@@ -3153,45 +3153,45 @@ TAKE     ;-----------------------------
          ; TAKE item
          ;-----------------------------
          LDA JOYSTICK
-	LSR A
-	BCS DROP
+        LSR A
+        BCS DROP
          ;AND #$11; 0001 0001
          ;BNE UP
          JSR COLTRS
          RTS
 DROP    
-	;LDA JOYSTICK
+        ;LDA JOYSTICK
         ; AND #$12; 0001 0010
         ; BNE TAKE
-	LSR A
-	BCS FIGHTL
+        LSR A
+        BCS FIGHTL
          JSR DROPOBJ
          RTS
          
 FIGHTL
          ;LDA JOYSTICK
          ;AND #$10; 0001 0000
-	LSR A
-	BCS FIGHTR
+        LSR A
+        BCS FIGHTR
          ;BNE LEAVEJ
          JSR SETFIGHTL
-	rts
+        rts
 FIGHTR
-	LSR A
-	BCS JOYBUTX
-	JSR SETFIGHTR
-	rts
-	
+        LSR A
+        BCS JOYBUTX
+        JSR SETFIGHTR
+        rts
+        
 JOYBUTX
-	JSR CLEARFIGHT
-	RTS
+        JSR CLEARFIGHT
+        RTS
 
 ;--------------------------------------
 ; READ KEYBOARD
 ;--------------------------------------
 READKEY 
-	; load keypress
-	LDA KEYPRESS
+        ; load keypress
+        LDA KEYPRESS
 
          ; no keypress? exit
          CMP #$40 
@@ -3207,52 +3207,52 @@ READKEY
 READKED  CMP #$12 
          BNE READKERS
          JSR DROPOBJ
-	 JMP READKEX
+         JMP READKEX
 
          ; RUN/STOP
 READKERS CMP #$3F 
          BNE READKET
          JSR GAMEOVER
-	 JMP READKEX
+         JMP READKEX
 
          ; T (take)
 READKET  CMP #$16 
          BNE READKPL
          JSR COLTRS
-	 JMP READKEX
-	
-	; -
+         JMP READKEX
+        
+        ; -
 READKPL CMP #$2B
-	BNE READKMN
-	DEC ROOM
-	JSR INCROOM
-	JMP READKEX
+        BNE READKMN
+        DEC ROOM
+        JSR INCROOM
+        JMP READKEX
 
 ; +
 READKMN CMP #$28
-	BNE READF1
-	INC ROOM
-	JSR INCROOM
-	JMP READKEX
+        BNE READF1
+        INC ROOM
+        JSR INCROOM
+        JMP READKEX
 
 ;F1
-READF1	CMP #$04
-	BNE READF3
-	JSR COLLOFF
-	JMP READKEX
+READF1        CMP #$04
+        BNE READF3
+        JSR COLLOFF
+        JMP READKEX
 
 ;F3
-READF3	cmp #$05
-	bne READK1
-	jsr COLLON
-	jmp READKEX
+READF3        cmp #$05
+        bne READK1
+        jsr COLLON
+        jmp READKEX
 
 READK1  ;1
-	CMP #$38
-	BNE READKEX
-	lda #$0a ; set amount of energy boost
-	sta tmp
-	JSR INCLIVES
+        CMP #$38
+        BNE READKEX
+        lda #$0a ; set amount of energy boost
+        sta tmp
+        JSR INCLIVES
 
 READKEX  RTS
 
@@ -3260,15 +3260,15 @@ READKEX  RTS
 ; read joystick button
 ;--------------------------------------
 READJOYB
-	LDA #$FF
-	STA JOYSTICK
+        LDA #$FF
+        STA JOYSTICK
 READJLO
-	; read joy 1
-	LDA JOYSTICK
-	; check if button pressed
-	AND #$10
-	BNE READJLO
-	RTS
+        ; read joy 1
+        LDA JOYSTICK
+        ; check if button pressed
+        AND #$10
+        BNE READJLO
+        RTS
 
 ;--------------------------------------
 ; WAITS FOR RET KEY
@@ -3292,9 +3292,9 @@ READRELO
 ; TITLE SCREEN ($1D)
 ;--------------------------------------
 TITLESCR JSR CLEARSCR
-	 LDA #$1D ; title screen data as room no. 
-	 STA ROOM
-	 JSR INITROOM
+         LDA #$1D ; title screen data as room no. 
+         STA ROOM
+         JSR INITROOM
 
          LDX #<TXTITLE2
          LDY #>TXTITLE2
@@ -3307,40 +3307,40 @@ TITLESCR JSR CLEARSCR
          LDX #<TXCOPY
          LDY #>TXCOPY
          JSR print
-	
-	ldx #<txtins
-	ldy #>txtins
-	jsr print
+        
+        ldx #<txtins
+        ldy #>txtins
+        jsr print
 
-	LDX #$FF
+        LDX #$FF
 TITLELO
-	DEX
-	BNE TITLEL1
-	LDX #$FF
-	JSR ANICHR
+        DEX
+        BNE TITLEL1
+        LDX #$FF
+        JSR ANICHR
 titlel1
-	; read joystick
-	LDA JOYSTICK
-	; check if button pressed
-	AND #$10
-	BNE TITLEL2
-	JMP TITLEX
+        ; read joystick
+        LDA JOYSTICK
+        ; check if button pressed
+        AND #$10
+        BNE TITLEL2
+        JMP TITLEX
 TITLEL2
-	; read keypress
-	LDA KEYPRESS
-	; if no keypress, loop
-	CMP #$40
-	BEQ TITLELO
-	; if f1 key show instructions
-	CMP #$04
-	BNE TITLELO
-	JSR INSTR
-	
-	JMP TITLELO
-	
+        ; read keypress
+        LDA KEYPRESS
+        ; if no keypress, loop
+        CMP #$40
+        BEQ TITLELO
+        ; if f1 key show instructions
+        CMP #$04
+        BNE TITLELO
+        JSR INSTR
+        
+        JMP TITLELO
+        
 TITLEX  ; set the initial room
-	LDA $1e ; #$00
-	STA ROOM
+        LDA $1e ; #$00
+        STA ROOM
          RTS
          
 ;--------------------------------------
@@ -3349,31 +3349,31 @@ TITLEX  ; set the initial room
 GAMEOVER
          ; JSR CLEARSCR
         
-	 ; clear area
-	 ; to game over msg
-	 LDY #$0E
+         ; clear area
+         ; to game over msg
+         LDY #$0E
 GAMEOVE1
-	 LDA #$20 ; empty
- 	 STA $04A8,Y
-	 STA $04D0,Y
-	 STA $04F8,Y
-	 STA $0520,Y
-	 DEY
-	 BNE GAMEOVE1
+         LDA #$20 ; empty
+          STA $04A8,Y
+         STA $04D0,Y
+         STA $04F8,Y
+         STA $0520,Y
+         DEY
+         BNE GAMEOVE1
 
-	 ; set pointer to screen memory
-	 ; for text ($04FB)
+         ; set pointer to screen memory
+         ; for text ($04FB)
 
-	 LDA #$04
-	 STA SCRHI
-	 LDA #$FB
-	 STA SCRLO
+         LDA #$04
+         STA SCRHI
+         LDA #$FB
+         STA SCRLO
 
          LDX #<TXTGOVER
          LDY #>TXTGOVER
          JSR print
-	 JSR READJOYB
-	 JSR NEWINI
+         JSR READJOYB
+         JSR NEWINI
          RTS
 
 ;--------------------------------------
@@ -3403,18 +3403,18 @@ CONGRATS
 ; set collision detection off
 ;--------------------------------------
 COLLOFF
-	lda MOOCOLL
-	ora #$80 ; 10000000 bit 7 on
-	sta MOOCOLL
-	rts
+        lda MOOCOLL
+        ora #$80 ; 10000000 bit 7 on
+        sta MOOCOLL
+        rts
 
 
 ; set collision on
 COLLON
-	lda MOOCOLL
-	and #$7F ; 01111111 bit 7 off
-	sta MOOCOLL
-	rts
+        lda MOOCOLL
+        and #$7F ; 01111111 bit 7 off
+        sta MOOCOLL
+        rts
 ;--------------------------------------
 ; HIDEOBJ
 ;--------------------------------------
@@ -3451,7 +3451,7 @@ INITMOO
          STA SPRDISPLAY
          
          ; Set moomin sprite - sprite 0 - 
-	 ; to multicolor mode
+         ; to multicolor mode
          ; by setting the first bit in SPRMULTICOL.
 
          LDA SPRMULTICOL
@@ -3491,9 +3491,9 @@ INITMOO
          LDA #$00
          STA FALLDCNT
 
-	; reset jump counter and clear
-	; jump state
-	JSR JUMPOFF
+        ; reset jump counter and clear
+        ; jump state
+        JSR JUMPOFF
 
          RTS
          
@@ -3672,7 +3672,7 @@ JMPRGT2
          JMP LVJMP
          
 ENDJMP
-	JSR JUMPOFF
+        JSR JUMPOFF
 LVJMP
          RTS
 ;--------------------------------------
@@ -3680,30 +3680,30 @@ LVJMP
 ;--------------------------------------
 
 JUMPOFF
-	; sets jump bit off
-	LDA MOOSTATE
-	AND #$EE
-	STA MOOSTATE
-	; clear jump counter
-	LDX #$00
-	STX JMPCNT
-	RTS
-	
+        ; sets jump bit off
+        LDA MOOSTATE
+        AND #$EE
+        STA MOOSTATE
+        ; clear jump counter
+        LDX #$00
+        STX JMPCNT
+        RTS
+        
 ;--------------------------------------
 ; MOOMIN FALLS
 ;--------------------------------------
 MOOFALL
-	; increase moomin y-location
+        ; increase moomin y-location
          INC MOOY
-	; increase fall counter
+        ; increase fall counter
          INC FALLDCNT
          LDA FALLDCNT
          CMP #$40
          BNE FALLEXIT
-	; after fall counter has reached $40
-	; fall is fatal!
-	lda #$05 ; set damage to tmp
-	sta tmp
+        ; after fall counter has reached $40
+        ; fall is fatal!
+        lda #$05 ; set damage to tmp
+        sta tmp
          JSR DECLIVES
          JSR INITMOO
 FALLEXIT
@@ -3713,119 +3713,119 @@ FALLEXIT
 ; Sets the fight mode off 
 ;--------------------------------------
 CLEARFIGHT
-	LDA MOOSTATE
-	; set fight bit (8th bit) off
-	AND #$7f ;0111 1111
-	STA moostate
-	rts
-	
+        LDA MOOSTATE
+        ; set fight bit (8th bit) off
+        AND #$7f ;0111 1111
+        STA moostate
+        rts
+        
 ;--------------------------------------
 SETFIGHTL
-	JSR SETFIGHT
-	RTS
+        JSR SETFIGHT
+        RTS
 ;--------------------------------------
 SETFIGHTR
-	JSR SETFIGHT
-	RTS
+        JSR SETFIGHT
+        RTS
 ;--------------------------------------
 ; SETS FIGHT MODE ON
 ;--------------------------------------
 SETFIGHT
-	; check 1st moomin state bits 
-	; to see if fighting is possible
-	LDA MOOSTATE
-	; 0111 0000 -> jumping/falling/climbing
-	AND #$70 ; BEQ-> fighting is possible 
-	BNE SETFIGHTX
-	
-	; set moomin state bit (8th bit) for fighting on:
-	LDA MOOSTATE
-	ORA #$80 ; 1000 0000
-	STA MOOSTATE 
-	INC BORDERCOL ; Debug
+        ; check 1st moomin state bits 
+        ; to see if fighting is possible
+        LDA MOOSTATE
+        ; 0111 0000 -> jumping/falling/climbing
+        AND #$70 ; BEQ-> fighting is possible 
+        BNE SETFIGHTX
+        
+        ; set moomin state bit (8th bit) for fighting on:
+        LDA MOOSTATE
+        ORA #$80 ; 1000 0000
+        STA MOOSTATE 
+        INC BORDERCOL ; Debug
 
 SETFIGHTX
-	RTS ; FIGHT ENDS
+        RTS ; FIGHT ENDS
 
 ;--------------------------------------
 ANIMFIGHT
-	; if animation counter is 0 -> animate
-	ldx moocnt
-	beq ANIMFIGHT1
-	; else decrease counter and leave
-	dec moocnt
-	rts
+        ; if animation counter is 0 -> animate
+        ldx moocnt
+        beq ANIMFIGHT1
+        ; else decrease counter and leave
+        dec moocnt
+        rts
 ANIMFIGHT1
-	; set animation counter to initial value
-	ldx #$05
-	stx moocnt
-	; check the direction moomin
-	; is facing (l/r)
-	LDA MOOSTATE
-	lsr a
-	lsr a
-	bcs animfightr
-	; facing left
-	LDY #$ba ; 1st fight frame facing left
-	cpy spr0dat ; compare to current frame
-	bne ANIMFIGHTX
-	INY ; INCREASE TO NEXT FRAME 
-	jmp animfightx
-	
+        ; set animation counter to initial value
+        ldx #$05
+        stx moocnt
+        ; check the direction moomin
+        ; is facing (l/r)
+        LDA MOOSTATE
+        lsr a
+        lsr a
+        bcs animfightr
+        ; facing left
+        LDY #$ba ; 1st fight frame facing left
+        cpy spr0dat ; compare to current frame
+        bne ANIMFIGHTX
+        INY ; INCREASE TO NEXT FRAME 
+        jmp animfightx
+        
 ANIMFIGHTR
-	; facing right
-	LDY #$b8 ; 1st fight frame facing right 
-	cpy spr0dat ; compare to current frame
-	bne ANIMFIGHTX
-	INY ; INCREASE TO NEXT FRAME
+        ; facing right
+        LDY #$b8 ; 1st fight frame facing right 
+        cpy spr0dat ; compare to current frame
+        bne ANIMFIGHTX
+        INY ; INCREASE TO NEXT FRAME
 ANIMFIGHTX
-	; set selected fight frame to moomin
-	; sprite data pointer from y-reg
-	STY SPR0DAT
-	rts
+        ; set selected fight frame to moomin
+        ; sprite data pointer from y-reg
+        STY SPR0DAT
+        rts
 ;--------------------------------------
 ; MOVE UP
 ;--------------------------------------
 ; Move moomin up when stick up.
 ;--------------------------------------
 MOVEUP
-	; check climbable up bit
-	; if the background surface is climbable
-	; if it is not, do a jump
+        ; check climbable up bit
+        ; if the background surface is climbable
+        ; if it is not, do a jump
         LDA MOOCOLL
         AND #$10
         BNE MOVEUP1
-	JSR MOVEJUMP 
-	RTS
+        JSR MOVEJUMP 
+        RTS
 
 MOVEUP1  ; set MOOSTATE to up
          LDA MOOSTATE
          ORA #$04 ; 00000100
          STA MOOSTATE
-	; decrease y-location
+        ; decrease y-location
          DEC MOOY
-	; if animation counter is 0
+        ; if animation counter is 0
          LDX MOOCNT
          BEQ FRAME1UP
-	; else decrease counter and leave
+        ; else decrease counter and leave
          DEC MOOCNT
          JMP LEAVEMUP
-	
+        
 FRAME1UP ; set animation counter to initial value
-	 LDX #$05
+         LDX #$05
          STX MOOCNT
-	
-	; check sprite frame at SPR0DAT (moomin sprite data pointer)
-	; first frame up is #$88
+        
+        ; check sprite frame at SPR0DAT (moomin sprite data pointer)
+        ; first frame up is #$88
          LDY #$88
          CPY SPR0DAT
          BNE SETFRUP ; frame is #$89, set to #$88
-	 ; frame is #$88, set to #$89
+         ; frame is #$88, set to #$89
          INY
 
 SETFRUP  ; store new frame data value to moomin
-	; sprite data pointer
-	STY SPR0DAT
+        ; sprite data pointer
+        STY SPR0DAT
 
 LEAVEMUP RTS
 
@@ -3852,7 +3852,7 @@ MOVEDOWN
          LSR A
          BCC LEAVEMDW ; climb down bit
         
-	; increase y-location
+        ; increase y-location
          INC MOOY
 
          LDX MOOCNT
@@ -3884,7 +3884,7 @@ MOVELEFT
          LDA MOOCOLL
          AND #$01
          BNE LVMVLFT
-	; decrease x location
+        ; decrease x location
          DEC MOOX
 
          LDX MOOCNT
@@ -3915,46 +3915,46 @@ LVMVLFT
 ; MOVE RIGHT
 ;--------------------------------------
 MOVERGT
-	; set MOOSTATE right bit on
+        ; set MOOSTATE right bit on
          JSR SETRGT
 
-	; check if collision right bit set
+        ; check if collision right bit set
          LDA MOOCOLL
          AND #$02
          BNE LVMVRGT
 
-	; increase x location
+        ; increase x location
          INC MOOX
 
-	; if moomin animation counter
-	; has decreased to zero change
-	; to next frame-right
+        ; if moomin animation counter
+        ; has decreased to zero change
+        ; to next frame-right
          LDX MOOCNT
          BEQ CHFRRGT
-	; else decrease animation counter
-	; and leave
+        ; else decrease animation counter
+        ; and leave
          DEC MOOCNT
          ; JMP LVMVRGT
-	rts
-	; animate next frame
+        rts
+        ; animate next frame
 CHFRRGT  
-	; set animation counter to initial value 
-	LDX #$05
+        ; set animation counter to initial value 
+        LDX #$05
          STX MOOCNT
 
-	; load current frame count value to x-reg
+        ; load current frame count value to x-reg
          LDX FRAME
          BNE NXFRRG
-	; if frame count value has reached zero
-	; load initial value to frame counter
+        ; if frame count value has reached zero
+        ; load initial value to frame counter
          LDX #$03
          STX FRAME
-NXFRRG	
-	; decrease frame count
+NXFRRG        
+        ; decrease frame count
          DEC FRAME
 LVMVRGT
-	; set moomin sprite data pointer SPR0DAT to 
-	; $80 + value at the frame counter FRAME
+        ; set moomin sprite data pointer SPR0DAT to 
+        ; $80 + value at the frame counter FRAME
          CLC
          LDA #$80 ; $80 -> first frame right
          ADC FRAME
@@ -4023,12 +4023,12 @@ INIENEMY ; clear sprite counter, Y and
          ; for current room until end sign $ff is reached
 INIENELO
          LDA RMNUM,X
-  	; exit if end sign $FF
- 	 CMP #$FF
+          ; exit if end sign $FF
+          CMP #$FF
          BEQ INIENEMX
-	
-	 ; check if sprobj is defined
-	 ; for this room
+        
+         ; check if sprobj is defined
+         ; for this room
          CMP ROOM
          BNE INIENELN
          
@@ -4044,15 +4044,15 @@ INIENELO
          ; and increase sprite counter Y
          JSR LDOBJDAT
          INY
-	 ; no more than 7 spr objects can be
-	 ; inserted to screen in addition to 
-	 ; moomin spr object
-	 CPY #$07
-	 BEQ INIENEMX
+         ; no more than 7 spr objects can be
+         ; inserted to screen in addition to 
+         ; moomin spr object
+         CPY #$07
+         BEQ INIENEMX
 
 INIENELN INX
          JMP INIENELO
-	 ; loop ends
+         ; loop ends
 
 INIENEMX
          ; if no sprites found leave
@@ -4067,14 +4067,14 @@ INIENEMX
 INIENEX
          ; IMPORTANT!:
          ; set amount of sprite objects in 
-	 ; current room back to Y-reg
+         ; current room back to Y-reg
          LDY SPRCNT
 
          ; clear all sprites other than
          ; moomin ... 
          LDA SPRDISPLAY
          AND #$01
-	 ; ...and set needed amount of sprites visible
+         ; ...and set needed amount of sprites visible
          ORA SPRORA,Y
          STA SPRDISPLAY
          RTS
@@ -4091,58 +4091,58 @@ LDOBJDAT
          TXA
          STA OBJRMIDX,Y
 
-	; store sbrobj state 
+        ; store sbrobj state 
          LDA RMOBSTA,X
          STA OBJSTA,Y
         
-	; store animation speed
+        ; store animation speed
          LDA RMANISP,X
          STA OBJANISP,Y
 
-	; store movement step
+        ; store movement step
          LDA RMMOVSTP,X
          STA OBJMOVSTP,Y
 
-	; store movement speed
+        ; store movement speed
          LDA RMMOVSP,X
          STA OBJMOVSP,Y
 
-	; store min x location
+        ; store min x location
          LDA RMMINX,X
          STA OBJMINX,Y
 
-	; store max x location
+        ; store max x location
          LDA RMMAXX,X
          STA OBJMAXX,Y
 
-	; store min y location
+        ; store min y location
          LDA RMMINY,X
          STA OBJMINY,Y
 
-	; store max y location
+        ; store max y location
          LDA RMMAXY,X
          STA OBJMAXY,Y
 
-	; store initial location
+        ; store initial location
          LDA RMINIX,X
          STA OBJX,Y
          LDA RMINIY,X
          STA OBJY,Y
 
-	; store colour
+        ; store colour
          LDA RMSPRCOL,X
          STA OBJSPCOL,Y
-	 ; set colour
+         ; set colour
          STA SPR1COL,Y
 
          ; store SPRITE ID
          LDA RMSPRID,X
          STA OBJID,Y
 
-	; ROOM SPECIFIC sprobj info
-	; has been loaded
-	; next load SPRITE SPECIFIC
-	; info
+        ; ROOM SPECIFIC sprobj info
+        ; has been loaded
+        ; next load SPRITE SPECIFIC
+        ; info
 
          ; store X
          STX TMPCNT
@@ -4152,7 +4152,7 @@ LDOBJDAT
          ; OBJ.SPR INFO
          ; load with sprite id as index
 
-	; load sprite state (multi/mono...)
+        ; load sprite state (multi/mono...)
          LDA SPRSTA,X
          STA OBJSPST,Y
 
@@ -4173,40 +4173,40 @@ LDMONO
 LDPOINT
          STA SPRMULTICOL
 
-	; store sprite data pointers
-	; 1st store pointer to still frame
+        ; store sprite data pointers
+        ; 1st store pointer to still frame
          LDA SPRPNST,X
          STA OBJPNST,Y
-  	; and set it to current frame of 
-	; the sprobj
+          ; and set it to current frame of 
+        ; the sprobj
          STA OBJFRCUR,Y
          STA SPR1DAT,Y
 
-	;store pointer to facing left 1st frame
+        ;store pointer to facing left 1st frame
          LDA SPRPNLF,X
          STA OBJPNLF,Y
 
-	;store amount of frames in horizontal movement	
+        ;store amount of frames in horizontal movement        
          LDA SPRFRLF,X
          STA OBJFRLR,Y
 
-	; store pointer to facing right 1st frame
+        ; store pointer to facing right 1st frame
          LDA SPRPNRG,X
          STA OBJPNRG,Y
 
-	; store pointer to facing uo
+        ; store pointer to facing uo
          LDA SPRPNUP,X
          STA OBJPNUP,Y
 
-	; store amount of frames in vertical movement
+        ; store amount of frames in vertical movement
          LDA SPRFRUP,X
          STA OBJFRUD,Y
 
-	; store pointer to facing down
+        ; store pointer to facing down
          LDA SPRPNDW,X
          STA OBJPNDW,Y
 
-	; store collision area data
+        ; store collision area data
          CLC
          LDA SPRCOLX1,X
          ADC OBJX,Y
@@ -4231,17 +4231,17 @@ LDPOINT
          SBC #$10
          STA OBJCOLY2,Y
 
-	; reset frame counter
+        ; reset frame counter
          LDA #$00
          STA OBJFRCNT,Y
 
-	; reset animation speed counter
-	STA OBJANICN,Y
+        ; reset animation speed counter
+        STA OBJANICN,Y
 
-	; reset movement speed counter
-	STA OBJSPCNT,Y
+        ; reset movement speed counter
+        STA OBJSPCNT,Y
 
-	; restore x
+        ; restore x
          LDX TMPCNT
 
          RTS
@@ -4281,90 +4281,90 @@ SETSPFLO LDA OBJFRCUR,X
 ; (other than moomin)
 ;--------------------------------------
 OBJANI 
-	; check first amount of sprite obects
-	; in the current room, leave if 0
+        ; check first amount of sprite obects
+        ; in the current room, leave if 0
 
-	LDA SPRCNT
+        LDA SPRCNT
         BEQ OBJANIX
-	
-	; clear loop counter (X-reg)
+        
+        ; clear loop counter (X-reg)
         LDX #$00
 
-	; loop all the sprites
-	; in current screen (X-reg)
+        ; loop all the sprites
+        ; in current screen (X-reg)
 OBJANILO
 
-	; check first movement speed counter
-	; for sprite X if it's time to get movin
+        ; check first movement speed counter
+        ; for sprite X if it's time to get movin
 
-	LDA OBJSPCNT,X
-	; if counter 0 continue
-	BEQ OBJANILO2
-	
-	; decrease movement speed counter
-	DEC OBJSPCNT,X
-	; and loop to next sprite obj
-	jmp OBJANILN
+        LDA OBJSPCNT,X
+        ; if counter 0 continue
+        BEQ OBJANILO2
+        
+        ; decrease movement speed counter
+        DEC OBJSPCNT,X
+        ; and loop to next sprite obj
+        jmp OBJANILN
 
 OBJANILO2
-	; set movement speed counter to initial value
-	LDA OBJMOVSP,X
-	STA OBJSPCNT,X
+        ; set movement speed counter to initial value
+        LDA OBJMOVSP,X
+        STA OBJSPCNT,X
 
-	; a screen can hold currently
-	; four sprite objects
-	; OBJSTA table holds the state
-	; for each sprobj
+        ; a screen can hold currently
+        ; four sprite objects
+        ; OBJSTA table holds the state
+        ; for each sprobj
 
-	; load sprobj properties
-	; (sprobj state)
-	; from OBJSTA-table
-	; check the movement bit
-	; (LSR puts bit to C-flag,
-	; bcc branches if C is set)
+        ; load sprobj properties
+        ; (sprobj state)
+        ; from OBJSTA-table
+        ; check the movement bit
+        ; (LSR puts bit to C-flag,
+        ; bcc branches if C is set)
 
          LDA OBJSTA,X
          LSR A
          BCC OBJANILN
          LSR A
 
-	; roll to 'facing left'-bit
-	; if set jump to move left sbr
+        ; roll to 'facing left'-bit
+        ; if set jump to move left sbr
 OBJANILF LSR A
          BCC OBJANIRG
          JSR OBJLFT
 
-	; roll to 'facing right'-bit
-	; if set, jump to move right sbr
+        ; roll to 'facing right'-bit
+        ; if set, jump to move right sbr
 OBJANIRG LSR A
          BCC OBJANIUP
          JSR OBJRGT
 
-	; roll to 'facing up' bit,
-	; call 'move up' sbr, if set
+        ; roll to 'facing up' bit,
+        ; call 'move up' sbr, if set
 OBJANIUP LSR A
          BCC OBJANIDW
          JSR OBJUP
-	
-	; roll to 'facing down' bit,
-	; call 'move down' sbr if set
+        
+        ; roll to 'facing down' bit,
+        ; call 'move down' sbr if set
 OBJANIDW LSR A
          BCC OBJANILN
          JSR OBJDWN
 
-	; increase counter
-	; and loop
+        ; increase counter
+        ; and loop
 OBJANILN
-	; increase counter and loop if not 
-	; yet amount of sprites in current room
-	INX
+        ; increase counter and loop if not 
+        ; yet amount of sprites in current room
+        INX
         CPX SPRCNT
         BNE OBJANILO
-	
-	; set sprite locations
+        
+        ; set sprite locations
          JSR SETSPLOC
 
-	 ; set sprite animation frame
+         ; set sprite animation frame
          JSR SETSPFRA
 
 OBJANIX  RTS
@@ -4375,8 +4375,8 @@ OBJANIX  RTS
 ; value
 ;--------------------------------------
 OBJLFT 
-	; store acc
-	STA TMP
+        ; store acc
+        STA TMP
 
          ; load object x location
          ; and check if minimum x has
@@ -4390,10 +4390,10 @@ OBJLFT
          ; from object's x-location (in the acc)
          SEC
          SBC OBJMOVSTP,X
-	 ; store new x-location
+         ; store new x-location
          STA OBJX,X
 
-	; move also collision areas
+        ; move also collision areas
          SEC
          LDA OBJCOLX1,X
          SBC OBJMOVSTP,X
@@ -4409,7 +4409,7 @@ OBJLFT
          LSR A
          BCC OBJLF2
 
-	; ... if set, animate
+        ; ... if set, animate
          JSR OBJANIH 
 OBJLF2
          JMP OBJLFX
@@ -4575,16 +4575,16 @@ OBJDWX   LDA TMP
 ; to current object in datatable.
 ;--------------------------------------
 OBJANIH 
-	; animation is done only if 
-	; animation counter of a sprobj
-	; reaches the animation speed 
-	; value set to it
+        ; animation is done only if 
+        ; animation counter of a sprobj
+        ; reaches the animation speed 
+        ; value set to it
 
-	; check animation speed-counter
+        ; check animation speed-counter
          ; compare to the value set
          ; to the object in OBJANISP
-	 ; ~check if it's time to change
-	 ; animation frame
+         ; ~check if it's time to change
+         ; animation frame
          LDA OBJANICN,X
          CMP OBJANISP,X
          BNE OBANIHX
@@ -4595,16 +4595,16 @@ OBJANIH
          STA OBJANICN,X
         
 
-	; check the direction the sprobj
-	; is heading and load the pointer
-	; to 1st frame of the animation
+        ; check the direction the sprobj
+        ; is heading and load the pointer
+        ; to 1st frame of the animation
 
          ; animate to l/r/u/d?
          LDA OBJSTA,X
          LSR A ; roll movement bit
          LSR A ; roll animation bit
          LSR A ; roll facing left -bit
-	; ... if set animate to left
+        ; ... if set animate to left
          BCS OBJANIHL
          LSR A ; right
          BCS OBJANIHR
@@ -4612,7 +4612,7 @@ OBJANIH
          BCS OBJANIHU
          ; otherwise continue to animate down
         
-	; load pointer to 1st animation down -frame to acc
+        ; load pointer to 1st animation down -frame to acc
          LDA OBJPNDW,X
          JMP OBJANIHC
          
@@ -4629,15 +4629,15 @@ OBJANIHR
          JMP OBJANIHC
          
 OBJANIHU
-	 ; load pointer to 1st animation up -frame
+         ; load pointer to 1st animation up -frame
          LDA OBJPNUP,X
          JMP OBJANIHC
          
 OBJANIHC
          ; add current value from 
          ; object frame counter to acc
-	 ; (the pointer to 1st frame
-	 ; is already in the acc)
+         ; (the pointer to 1st frame
+         ; is already in the acc)
          CLC
          ADC OBJFRCNT,X
          ; store new frame pointer value
@@ -4653,33 +4653,33 @@ OBJANIHC
          LSR A ; right
          BCS OBJANIHH
 
-	; vertical animation frame check
+        ; vertical animation frame check
         
          ; compare current frame 
          ; counter value
-	 ; to the amount of vertical animation
-	 ; frames for the sprobj
-	 ; if reach, reset the counter
+         ; to the amount of vertical animation
+         ; frames for the sprobj
+         ; if reach, reset the counter
          LDA OBJFRCNT,X
          CMP OBJFRUD,X
          BEQ OBANIHZ
 
-	 ; added the following two lines,
-	 ; not sure though if the horizontal
-	 ; animation frames should also be 
-	 ; checked
+         ; added the following two lines,
+         ; not sure though if the horizontal
+         ; animation frames should also be 
+         ; checked
 
-	 ; increase frame counter
+         ; increase frame counter
          INC OBJFRCNT,X
-	 JMP OBANIHX 
+         JMP OBANIHX 
 
 OBJANIHH
-	; horizontal animation frame check
+        ; horizontal animation frame check
 
-	; compare the frame counter to the
-	; amount of horizontal animation frames
-	; for the sprobj
-	; if reached, reset counter
+        ; compare the frame counter to the
+        ; amount of horizontal animation frames
+        ; for the sprobj
+        ; if reached, reset counter
          LDA OBJFRCNT,X
          CMP OBJFRLR,X
          BEQ OBANIHZ
@@ -4704,16 +4704,16 @@ OBANIHX
 ; clear sprites
 ;--------------------------------------
 CLEARSPR
-	; clear sprite counter
-	lda #$00
-	sta sprcnt
+        ; clear sprite counter
+        lda #$00
+        sta sprcnt
 
-	; clear all sprites
-	lda SPRDISPLAY
-	and #$00
-	sta SPRDISPLAY
+        ; clear all sprites
+        lda SPRDISPLAY
+        and #$00
+        sta SPRDISPLAY
 
-	rts
+        rts
 
 ;======================================
 ;
@@ -4739,39 +4739,39 @@ CLEARSPR
 ; NOTE: A String cannot be more than 255 bytes long!
  
 print
-	; point LVCHLO/HI to string data
-	stx LVCHLO
-	sty LVCHI
+        ; point LVCHLO/HI to string data
+        stx LVCHLO
+        sty LVCHI
 
-	; read the screen memory location
-	; for the string to msgloclo/hi
-	ldy #$00
-	lda (lvchlo),y
-	sta scrlo
-	iny
-	lda (lvchlo),y
-	sta scrhi
-	; read message colour to strcol
-	iny
-	lda (lvchlo),y
-	sta strcol
-	; read width of the message column
-	; to MSGCOLWIDTH 
-	iny
-	lda (lvchlo),y
-	sta MSGCOLWIDTH
+        ; read the screen memory location
+        ; for the string to msgloclo/hi
+        ldy #$00
+        lda (lvchlo),y
+        sta scrlo
+        iny
+        lda (lvchlo),y
+        sta scrhi
+        ; read message colour to strcol
+        iny
+        lda (lvchlo),y
+        sta strcol
+        ; read width of the message column
+        ; to MSGCOLWIDTH 
+        iny
+        lda (lvchlo),y
+        sta MSGCOLWIDTH
 
-	; set lvchlo/hi to the start of actual
-	; string data -> add 4 to lvchlo/hi
-	clc
-	lda lvchlo
-	adc #$04
-	sta lvchlo
-	lda lvchi
-	adc #$00
-	sta lvchi
-	jsr printstr
-	rts
+        ; set lvchlo/hi to the start of actual
+        ; string data -> add 4 to lvchlo/hi
+        clc
+        lda lvchlo
+        adc #$04
+        sta lvchlo
+        lda lvchi
+        adc #$00
+        sta lvchi
+        jsr printstr
+        rts
 ;-------------------------------------
 ; lvchi/lo must contain the string character data.
 ; $00 is the end sign for a string.
@@ -4782,64 +4782,64 @@ print
  
 printstr
 
-	; set index counter y-reg to 0	
-	ldy #$00
-	; tmpcnt is a width counter
-	lda #$00
-	sta tmpcnt
-	
+        ; set index counter y-reg to 0        
+        ldy #$00
+        ; tmpcnt is a width counter
+        lda #$00
+        sta tmpcnt
+        
          ;read screen colour 
          ;memory pointer values to
          ;LOTMP and HITMP
          JSR GETCOLM
 
-	; now finally read the actual string
-	; until $00 occurs
-	; or y goes to zero again (too long string)
-	
+        ; now finally read the actual string
+        ; until $00 occurs
+        ; or y goes to zero again (too long string)
+        
 printstrloop
-	lda (lvchlo),y
-	beq printstrx ; end sign $00 occured
-	sty tmp
-	ldy tmpcnt
-	; set char to screen
-	sta (scrlo),y
-	; set right colour to colour memory of screen location
-	lda strcol
-	sta (lotmp),y
-	ldy tmp
-	iny
-	beq printstrx ; y went over to 0 (too long string)
-	inc tmpcnt
-	lda tmpcnt 
-	cmp msgcolwidth
-	; has column widht already reached
-	bne printstrloop
-	; column width has been reached
+        lda (lvchlo),y
+        beq printstrx ; end sign $00 occured
+        sty tmp
+        ldy tmpcnt
+        ; set char to screen
+        sta (scrlo),y
+        ; set right colour to colour memory of screen location
+        lda strcol
+        sta (lotmp),y
+        ldy tmp
+        iny
+        beq printstrx ; y went over to 0 (too long string)
+        inc tmpcnt
+        lda tmpcnt 
+        cmp msgcolwidth
+        ; has column widht already reached
+        bne printstrloop
+        ; column width has been reached
 
-	lda #$00
-	sta tmpcnt
-	; add a row 
-	; (40 chars) to screen 
-	; and colour memory pointer
-	clc
-	lda scrlo
-	adc #$28 ; add a row
-	sta scrlo
-	lda scrhi
-	adc #$00
-	sta scrhi
-	clc
-	lda lotmp
-	adc #$28
-	sta lotmp
-	lda hitmp
-	adc #$00
-	sta hitmp
-	jmp printstrloop
+        lda #$00
+        sta tmpcnt
+        ; add a row 
+        ; (40 chars) to screen 
+        ; and colour memory pointer
+        clc
+        lda scrlo
+        adc #$28 ; add a row
+        sta scrlo
+        lda scrhi
+        adc #$00
+        sta scrhi
+        clc
+        lda lotmp
+        adc #$28
+        sta lotmp
+        lda hitmp
+        adc #$00
+        sta hitmp
+        jmp printstrloop
 
 printstrx
-	rts
+        rts
 
 ;--------------------------------------
 ; CLEAR MESSAGES AREA
@@ -4906,12 +4906,12 @@ WRITEMSG
          STY SCRHI
          ; message colour
          LDA #$0A
-	 sta strcol
-	lda #$0a
-	sta msgcolwidth
-	; print the message string
-	jsr printstr
-	rts
+         sta strcol
+        lda #$0a
+        sta msgcolwidth
+        ; print the message string
+        jsr printstr
+        rts
 ;--------------------------------------
 ; CLEARS SCREEN
 ;--------------------------------------
@@ -4921,50 +4921,50 @@ CLEARSCR
          
          LDX #$00
 CLEARLO
-	 ; clear starting from screen mem SCREENMEM
+         ; clear starting from screen mem SCREENMEM
          STA SCREENMEM,X
-	 ; clear starting from SCREENMEMBK2
+         ; clear starting from SCREENMEMBK2
          STA SCREENMEMBK2,X
-	 ; from SCREENMEMBK3
+         ; from SCREENMEMBK3
          STA SCREENMEMBK3,X
 
          DEX
          BNE CLEARLO
          
          ; the rest of screen mem
-	 ; last screen memory location is
-	 ; $07e7
+         ; last screen memory location is
+         ; $07e7
 
          LDX #$E7
 CLEARLO2 
          STA SCREENMEMBK4,X
          DEX 
          BNE CLEARLO2
-	 sta SCREENMEMBK4
+         sta SCREENMEMBK4
          RTS
         
 ;--------------------------------------
 ; INSTRUCTIONS
 ;--------------------------------------
-INSTR	JSR CLEARSCR
-	LDA #$01
-	STA CHRCOL1
-	LDA #$02
-	STA CHRCOL2
-	LDA #$00
-	STA SCREENCOL
-	STA BORDERCOL 
-	LDX #<INSTRTX1
-	LDY #>INSTRTX1
-	jsr print
-	LDX #<INSTRTX2
-	LDY #>INSTRTX2
-	jsr print
-	LDX #<INSTRTX3
-	LDY #>INSTRTX3
-	jsr print
-	JSR READJOYB
-	RTS
+INSTR        JSR CLEARSCR
+        LDA #$01
+        STA CHRCOL1
+        LDA #$02
+        STA CHRCOL2
+        LDA #$00
+        STA SCREENCOL
+        STA BORDERCOL 
+        LDX #<INSTRTX1
+        LDY #>INSTRTX1
+        jsr print
+        LDX #<INSTRTX2
+        LDY #>INSTRTX2
+        jsr print
+        LDX #<INSTRTX3
+        LDY #>INSTRTX3
+        jsr print
+        JSR READJOYB
+        RTS
 ;======================================
 ;
 ;         S F X - routines
@@ -4983,9 +4983,9 @@ SNDCLRLO
          DEY
          BNE SNDCLRLO
          STA $D400,Y
-	 ; set volume to max
-	 LDA #$0E
-	 STA $D418
+         ; set volume to max
+         LDA #$0E
+         STA $D418
          RTS
 
 ;--------------------------------------
@@ -5001,7 +5001,7 @@ SFXINIT
          STA SND1STP
          
          ; set sound start index to SND1CNT
-	 ; sound data pointer
+         ; sound data pointer
          LDA SOUNDLN,X
          CLC
          ADC SND1STP
@@ -5011,10 +5011,10 @@ SFXINIT
          LDA #$00
          STA SND1TIME
        
-	 ; set sound state: PLAYING 00000001
-	 LDA SNDSTATE
-	 ORA #$01
-	 STA SNDSTATE
+         ; set sound state: PLAYING 00000001
+         LDA SNDSTATE
+         ORA #$01
+         STA SNDSTATE
          RTS
 
 ;--------------------------------------
@@ -5025,13 +5025,13 @@ SFXINIT
 ; with SFXINIT routine.
 ;--------------------------------------
 SFX 
-	; CHECK 1ST BIT OF SOUNDSTATE
-	; IS PLAYING?
-	; LEAVE IF BIT IS 0
-	LDA SNDSTATE
-	LSR A
-	BCS SFX2
-	RTS
+        ; CHECK 1ST BIT OF SOUNDSTATE
+        ; IS PLAYING?
+        ; LEAVE IF BIT IS 0
+        LDA SNDSTATE
+        LSR A
+        BCS SFX2
+        RTS
 SFX2
          ; STORE X and Y
          STX TMP
@@ -5042,46 +5042,46 @@ SFXC
          LDA SND1TIME
          BEQ SFXLO ; NEXT NOTE
         
-	 ; play old note,
-	 ; set sound data pointer to x
-	 LDX SND1CNT 
-	 ; get waveform...
-	 LDA SOUNDWA,X
-	 ; and play
-	 STA $D404
+         ; play old note,
+         ; set sound data pointer to x
+         LDX SND1CNT 
+         ; get waveform...
+         LDA SOUNDWA,X
+         ; and play
+         STA $D404
          ; decrease playtime counter
          DEC SND1TIME
-	 ; and leave
- 	 JMP SFXX
+         ; and leave
+          JMP SFXX
 
 SFXLO  
-	; stop old note by setting the 1st bit
-	; in waveform to 0: AND 11111110 ($FE)
+        ; stop old note by setting the 1st bit
+        ; in waveform to 0: AND 11111110 ($FE)
 
-	LDA $D404
-	AND #$FE
-	STA $D404
-	
+        LDA $D404
+        AND #$FE
+        STA $D404
+        
          ; check if sound end index
          ; reached by comparing sound data
-	 ; pointer to sound end adress pointer
+         ; pointer to sound end adress pointer
          LDA SND1CNT
          CMP SND1STP
-	 ; continue if not end index
+         ; continue if not end index
          BNE SFXLO1
 
-	 ; or end sound and exit
-	 ; set SNDSTATE playing bit to 0
-	LDA SNDSTATE
-	AND #$FE
-	STA SNDSTATE
-	JMP SFXX
+         ; or end sound and exit
+         ; set SNDSTATE playing bit to 0
+        LDA SNDSTATE
+        AND #$FE
+        STA SNDSTATE
+        JMP SFXX
 
-	; play new note
+        ; play new note
 SFXLO1
-	; decrease sound data table pointer
+        ; decrease sound data table pointer
          DEC SND1CNT
-	 ; load sound data pointer to x
+         ; load sound data pointer to x
          LDX SND1CNT
          
          ; attack/decay
@@ -5107,7 +5107,7 @@ SFXLO1
          ;waveform
          LDA SOUNDWA,X
          STA $D404
-	
+        
 SFXX
          ; RESTORE X and Y
          LDX TMP
@@ -5149,7 +5149,7 @@ SOUNDAD  .BYTE $09,$09,$09
          .BYTE $09,$09
          .BYTE $09,$09
          .BYTE $09,$09,$09 ; expl
-	.byte $09,$09 ;hit sword
+        .byte $09,$09 ;hit sword
 ; sustain/release
 SOUNDSR  .BYTE $85,$85,$85
          .BYTE $85,$85,$85,$85
@@ -5166,7 +5166,7 @@ SOUNDWA  .BYTE $21,$21,$21
          .BYTE $21,$21
          .BYTE $21,$21
          .BYTE $81,$81,$81 ; expl
-	.BYTE $21,$21 ;hit sword
+        .BYTE $21,$21 ;hit sword
         
 ; hi-frequency
 SOUNDHI  .BYTE $2B,$26,$22
@@ -5174,21 +5174,21 @@ SOUNDHI  .BYTE $2B,$26,$22
          .BYTE $22,$33
          .BYTE $33,$22
          .BYTE $33,$22,$2B ; expl
-	.BYTE $22,$33 ;hit sword
+        .BYTE $22,$33 ;hit sword
 ; lo-frequency
 SOUNDLO  .BYTE $34,$7E,$4B
          .BYTE $4B,$7E,$34,$61
          .BYTE $4B,$61
          .BYTE $61,$4B
          .BYTE $61,$4B,$34 ; expl
-	.BYTE $61,$4B ;hit sword
+        .BYTE $61,$4B ;hit sword
 ; playtime
 SOUNDTM  .BYTE $03,$03,$03
          .BYTE $03,$03,$03,$03
          .BYTE $03,$06
          .BYTE $06,$03
          .BYTE $50,$30,$10 ; expl
-	.BYTE $03,$06 ;hit sword
+        .BYTE $03,$06 ;hit sword
 ;--------------------------------------
 ;FILENAMES
 ;--------------------------------------
@@ -5209,105 +5209,105 @@ FILENCHR .TEXT "CHR"
 ; NOTE: A String cannot be more than 255 bytes long!
 
 TXTHOLDS .BYTE $1F,$04,$08,$05
-	.enc screen
+        .enc screen
          .BYTE "HOLDS"
-	.enc none
+        .enc none
          .BYTE $00
          
 TXLIVES  .BYTE $6F,$04,$09,$05
-	.enc screen
+        .enc screen
          .BYTE "ENERGY"
-	.enc none 
-	.BYTE $00
+        .enc none 
+        .BYTE $00
          
 TXTITLE2 .BYTE $36,$06,$0A,$14
-	.enc screen
-	.BYTE "PRESS FIRE TO START"
-	.enc none
+        .enc screen
+        .BYTE "PRESS FIRE TO START"
+        .enc none
          .BYTE $00
          
 TXTGOVER .BYTE $FB,$04,$0A,$09
-	.enc screen
-	.byte "GAME OVER"	
-	.enc none
+        .enc screen
+        .byte "GAME OVER"        
+        .enc none
          .BYTE $00
 
 TXTCONG  .BYTE $30,$04,$0A,$10
-	.enc screen
-	.BYTE "CONGRATULATIONS!"
-	.enc none
+        .enc screen
+        .BYTE "CONGRATULATIONS!"
+        .enc none
          .BYTE $00
          
 TXCOPY  .BYTE $E4,$05,$0B,$16
-	.enc screen
-	.BYTE "C MIKKO KEIN"
-	.enc none
-	.BYTE $1D
-	.enc screen
-	.BYTE "NEN 2008"
-	.enc none
+        .enc screen
+        .BYTE "C MIKKO KEIN"
+        .enc none
+        .BYTE $1D
+        .enc screen
+        .BYTE "NEN 2008"
+        .enc none
         .BYTE $00
          
 TXTJOY  .BYTE $AE,$06,$09,$12
-	.enc screen
-	.byte "JOYSTICK IN PORT 2"
-	.enc none
+        .enc screen
+        .byte "JOYSTICK IN PORT 2"
+        .enc none
         .BYTE $00
 
 TXTINS  .BYTE $28,$07,$09,$0D
-	.enc screen
-	.byte "PRESS F1 FOR INSTRUCTIONS"
-	.enc none
+        .enc screen
+        .byte "PRESS F1 FOR INSTRUCTIONS"
+        .enc none
         .BYTE $00
 
 INSTRTX1
-	.byte $00, $04, $08, $28
-	.enc screen
-	.TEXT " MOOMIN WANTS TO GO SAILING WITH MISS   "
-	.TEXT " NIISKU. BEFORE HE CAN GO HE MUST HELP  "
-	.TEXT " HIS FRIENDS TO GATHER SOME MISSING     "
-	.TEXT " OBJECTS FROM TROLLY VALLEY. CONTACT    "
-	.TEXT " MOOMINS FRIENDS FOR MORE INFO. FIND THE"
-	.TEXT " OBJECTS AND RETURN THEM TO THEIR OWNER."
-	.enc none
-	.byte $00
+        .byte $00, $04, $08, $28
+        .enc screen
+        .TEXT " MOOMIN WANTS TO GO SAILING WITH MISS   "
+        .TEXT " NIISKU. BEFORE HE CAN GO HE MUST HELP  "
+        .TEXT " HIS FRIENDS TO GATHER SOME MISSING     "
+        .TEXT " OBJECTS FROM TROLLY VALLEY. CONTACT    "
+        .TEXT " MOOMINS FRIENDS FOR MORE INFO. FIND THE"
+        .TEXT " OBJECTS AND RETURN THEM TO THEIR OWNER."
+        .enc none
+        .byte $00
 
 
 
 INSTRTX2
-	.byte $18, $05, $08, $28
-	.enc screen
-	.TEXT " GUIDE MOOMIN USING JOYSTICK IN PORT 2. " 
-	.TEXT " PUSH STICK UP, NW AND NE TO JUMP.      "
-	.TEXT " PRESS FIRE AND UP TO PICK UP AN OBJECT."
-	.TEXT " PRESS FIRE AND DOWN TO DROP AB OBJECT. "
-	.TEXT " PRESS A KEY TO USE AN ITEM. PRESS RUN- "
-	.TEXT " STOP-KEY TO RESTART THE GAME."         
-	.enc none
-	.byte $00
+        .byte $18, $05, $08, $28
+        .enc screen
+        .TEXT " GUIDE MOOMIN USING JOYSTICK IN PORT 2. " 
+        .TEXT " PUSH STICK UP, NW AND NE TO JUMP.      "
+        .TEXT " PRESS FIRE AND UP TO PICK UP AN OBJECT."
+        .TEXT " PRESS FIRE AND DOWN TO DROP AB OBJECT. "
+        .TEXT " PRESS A KEY TO USE AN ITEM. PRESS RUN- "
+        .TEXT " STOP-KEY TO RESTART THE GAME."         
+        .enc none
+        .byte $00
 
 INSTRTX3.byte $08, $06, $08, $28
-	.enc screen
-	.TEXT " PUSH JOYSTICK WITH FIRE BUTTON PRESSED "
-	.TEXT " DOWN TO THE DIRECTION OF AN HOSTILE    "
-	.TEXT " CREATURE TO DEFEND. YOU CAN FIND OUT   "
-	.TEXT " WHO ARE YOUR FRIENDS USING SWORD...    "
-	.TEXT " THEY DONT RESPOND TO THE SWORD.        "
-	.TEXT " PRESS FIRE."
-	.enc none
-	.byte $00
+        .enc screen
+        .TEXT " PUSH JOYSTICK WITH FIRE BUTTON PRESSED "
+        .TEXT " DOWN TO THE DIRECTION OF AN HOSTILE    "
+        .TEXT " CREATURE TO DEFEND. YOU CAN FIND OUT   "
+        .TEXT " WHO ARE YOUR FRIENDS USING SWORD...    "
+        .TEXT " THEY DONT RESPOND TO THE SWORD.        "
+        .TEXT " PRESS FIRE."
+        .enc none
+        .byte $00
 
-INSTRTX4	
-	.byte $f8, $06, $08, $28
-	.enc screen
-	.TEXT " GO TO MISS NIISKU AFTER YOU HAVE HELPED"
-	.TEXT " ALL ALL OF YOUR FRIENS.                "
-	.TEXT " BEWARE OF THE LITTLE MY                "
-	.TEXT " ALSO, SHE IS PISSED OF AT MOOMIN - HE  "
-	.TEXT " ATE ALL HER COOKIES! GOOD LUCK!        "
-	.TEXT " PRESS FIRE TO START!"
-	.enc none
-	.byte $00
+INSTRTX4        
+        .byte $f8, $06, $08, $28
+        .enc screen
+        .TEXT " GO TO MISS NIISKU AFTER YOU HAVE HELPED"
+        .TEXT " ALL ALL OF YOUR FRIENS.                "
+        .TEXT " BEWARE OF THE LITTLE MY                "
+        .TEXT " ALSO, SHE IS PISSED OF AT MOOMIN - HE  "
+        .TEXT " ATE ALL HER COOKIES! GOOD LUCK!        "
+        .TEXT " PRESS FIRE TO START!"
+        .enc none
+        .byte $00
 
 ;--------------------------------------
 ;MESSAGES
@@ -5338,7 +5338,7 @@ MSGWIZB  .BYTE "ITS MARVELLOUS",$00
 ; $02
 ; $03
 ; ...
-; $1D	title screen
+; $1D        title screen
 ; $1E mountain cave
 ; $1F not used
 ;--------------------------------------
@@ -5350,34 +5350,34 @@ MSGWIZB  .BYTE "ITS MARVELLOUS",$00
 ;--------------------------------------
 EXITLFT  .BYTE $01,$03,$04,$08,$FF,$02
          .BYTE $1A,$06,$09,$FF,$16,$FF
-	 ;$0C...
+         ;$0C...
          .BYTE $0D,$FF,$FF,$FF,$0A,$07
          .BYTE $FF,$11,$10,$13,$18,$15
-	 ;$18...
+         ;$18...
          .BYTE $05,$1E,$00,$0E,$12,$FF 
-	 .BYTE $ff,$0b
+         .BYTE $ff,$0b
          
 EXITRGT  .BYTE $1A,$00,$05,$01,$02,$18
          .BYTE $07,$11,$03,$08,$10,$1F
          .BYTE $FF,$0C,$1B,$0E,$14,$13
          .BYTE $1C,$15,$FF,$17,$0A,$FF
-	 ;$18...
+         ;$18...
          .BYTE $16,$FF,$06,$FF,$FF,$FF  
-	 .BYTE $19,$FF
+         .BYTE $19,$FF
          
 EXITUP   .BYTE $FF,$02,$0D,$04,$FF,$0C
          .BYTE $16,$0A,$FF,$FF,$FF,$FF ; -> $0B
          .BYTE $1F,$0B,$FF,$03,$12,$10 ; -> $11
          .BYTE $FF,$14,$1C,$FF,$FF,$FF ; -> $17
          .BYTE $FF,$08,$18,$FF,$FF,$FF ; -> $1D
-	 .BYTE $09,$FF
+         .BYTE $09,$FF
          
 EXITDWN  .BYTE $1B,$0E,$01,$0F,$03,$00
          .BYTE $FF,$FF,$19,$1E,$07,$0D ;->$0B
          .BYTE $05,$02,$FF,$FF,$11,$FF
          .BYTE $10,$FF,$13,$FF,$06,$FF
          .BYTE $1A,$FF,$FF,$FF,$14,$FF ; -> $1d
-	 .BYTE $FF,$0c
+         .BYTE $FF,$0c
 
 ; ROOM EXIT SPECIFICATIONS END
 
@@ -5418,29 +5418,29 @@ MATMSGLO .BYTE $00,$00,$00,<MSGMUIKU
          .BYTE <MSGHEMUA,$00,<MSGNIISA
          .BYTE $00,<MSGPAPPA,<MSGMAMMA
          .BYTE $00,<MSGNIPSA
-	 .BYTE $00,$00,$00,$00,$00,$00
-	 .BYTE <MSGWIZA,$00,$00,$00,$00
+         .BYTE $00,$00,$00,$00,$00,$00
+         .BYTE <MSGWIZA,$00,$00,$00,$00
          
 MATMSGHI .BYTE $00,$00,$00,>MSGMUIKU
          .BYTE >MSGHEMUA,$00,>MSGNIISA
          .BYTE $00,>MSGPAPPA,>MSGMAMMA
          .BYTE $00,>MSGNIPSA
-	 .BYTE $00,$00,$00,$00,$00,$00
-	 .BYTE >MSGWIZA,$00,$00,$00,$00
+         .BYTE $00,$00,$00,$00,$00,$00
+         .BYTE >MSGWIZA,$00,$00,$00,$00
          
 MAMTHXLO .BYTE $00,$00,$00,<MSGMUIKB
          .BYTE <MSGHEMUB,$00,<MSGNIISB
          .BYTE $00,<MSGPAPPB,<MSGMAMMB
          .BYTE $00,<MSGNIPSB
-	 .BYTE $00,$00,$00,$00,$00,$00
-	 .BYTE <MSGWIZB,$00,$00,$00,$00
+         .BYTE $00,$00,$00,$00,$00,$00
+         .BYTE <MSGWIZB,$00,$00,$00,$00
          
 MAMTHXHI .BYTE $00,$00,$00,>MSGMUIKB
          .BYTE >MSGHEMUB,$00,>MSGNIISB
          .BYTE $00,>MSGPAPPB,>MSGMAMMB
          .BYTE $00,>MSGNIPSB
-	 .BYTE $00,$00,$00,$00,$00,$00
-	 .BYTE >MSGWIZB,$00,$00,$00,$00
+         .BYTE $00,$00,$00,$00,$00,$00
+         .BYTE >MSGWIZB,$00,$00,$00,$00
 
 ; sprite state: mono=0, multicolor = 1
 ; maybe expanded/normal, ...
@@ -5453,7 +5453,7 @@ MAMTHXHI .BYTE $00,$00,$00,>MSGMUIKB
 SPRSTA   .BYTE $00,$01,$01,$01,$01,$01 ; spr $00-$05
          .BYTE $01,$01,$01,$01,$01,$01 ; spr $06-$0b
          .BYTE $05,$05,$09,$01,$01,$01 ; spr $0c-$11
-	 .BYTE $01,$01,$01,$05,$01
+         .BYTE $01,$01,$01,$05,$01
 
 ; sprite data pointers,
 ; first sprite is $..(?)
@@ -5461,39 +5461,39 @@ SPRSTA   .BYTE $00,$01,$01,$01,$01,$01 ; spr $00-$05
 SPRPNST  .BYTE $8A,$97,$9A,$9C,$9D,$A1
          .BYTE $A3,$A4,$A6,$A7,$A8,$AC
          .BYTE $AE,$AF,$B0,$B2,$8F,$91
-	 .BYTE $8D,$86,$BC,$93,$C2
+         .BYTE $8D,$86,$BC,$93,$C2
 ; sprite data pointer / moving left
 SPRPNLF  .BYTE $8A,$94,$9A,$9C,$9D,$A1
          .BYTE $A3,$A4,$A6,$A7,$A8,$AC
          .BYTE $AE,$AF,$B0,$B5,$8F,$91
-	 .BYTE $8D,$86,$BC,$93,$C2
+         .BYTE $8D,$86,$BC,$93,$C2
 ; sprite data pointer / moving right
 SPRPNRG  .BYTE $8A,$96,$9A,$9C,$9F,$A1
          .BYTE $A3,$A4,$A6,$A7,$AA,$AC
          .BYTE $AE,$AF,$B0,$B2,$8F,$91
-	 .BYTE $8D,$86,$BF,$93,$C4
+         .BYTE $8D,$86,$BF,$93,$C4
 ; sprite data pointer / moving up
 SPRPNUP  .BYTE $8A,$98,$9A,$9C,$9D,$A1
          .BYTE $A3,$A4,$A6,$A7,$A8,$AC
          .BYTE $AE,$AF,$B0,$B2,$8F,$91
-	 .BYTE $8D,$86,$BC,$93,$C2
+         .BYTE $8D,$86,$BC,$93,$C2
 ; sprite data pointer / moving down
 SPRPNDW  .BYTE $8A,$98,$9A,$9C,$9F,$A1
          .BYTE $A3,$A4,$A6,$A7,$A8,$AC
          .BYTE $AE,$AF,$B0,$B5,$8F,$91
-	 .BYTE $8D,$86,$BF,$93,$C4
+         .BYTE $8D,$86,$BF,$93,$C4
 ; amount of animation frames - 1 (!) for 
 ; horizontal movement
 SPRFRLF  .BYTE $02,$01,$01,$00,$01,$01
          .BYTE $00,$01,$00,$00,$01,$01
          .BYTE $00,$00,$01,$02,$01,$01
-	 .BYTE $01,$01,$02,$00,$01
+         .BYTE $01,$01,$02,$00,$01
 ; amount of animation frames
 ; for verovement
 SPRFRUP  .BYTE $02,$01,$01,$00,$01,$01
          .BYTE $00,$01,$00,$00,$01,$01
          .BYTE $00,$00,$01,$00,$01,$01
-	 .BYTE $01,$01,$02,$00,$01
+         .BYTE $01,$01,$02,$00,$01
 
 ; sprite x/y max/min collision 
 ; detection area location values.
@@ -5508,23 +5508,23 @@ SPRFRUP  .BYTE $02,$01,$01,$00,$01,$01
 SPRCOLX1 .BYTE $05,$00,$00,$00,$00,$04
          .BYTE $00,$02,$00,$00,$05,$00
          .BYTE $00,$00,$00,$00,$00,$00
-	 .BYTE $00,$00,$00,$00,$00
+         .BYTE $00,$00,$00,$00,$00
 ; sprite collision area / max x
 SPRCOLX2 .BYTE $17,$1D,$1D,$1D,$1D,$19
          .BYTE $1D,$1B,$1D,$1D,$1D,$1D
          .BYTE $1D,$1D,$1D,$1D,$1D,$1D
-	 .BYTE $1D,$1D,$1D,$1D,$1D
+         .BYTE $1D,$1D,$1D,$1D,$1D
 ; sprite collision area / min y
 ; top/left-corner
 SPRCOLY1 .BYTE $08,$00,$00,$00,$00,$08
          .BYTE $00,$00,$00,$00,$0A,$00
          .BYTE $00,$00,$00,$00,$00,$00
-	 .BYTE $00,$00,$00,$00,$00
+         .BYTE $00,$00,$00,$00,$00
 ; sprite collision area / max y
 SPRCOLY2 .BYTE $1f,$1F,$1F,$1F,$1F,$1F
          .BYTE $1F,$15,$1F,$1F,$1F,$1F
          .BYTE $1F,$1F,$05,$1F,$1F,$1F
-	 .BYTE $1F,$1F,$1F,$1F,$1F
+         .BYTE $1F,$1F,$1F,$1F,$1F
 
 ; GLOBAL SPRITE OBJECT DEFINITIONS END HERE!
 ;--------------------------------------------
@@ -5588,14 +5588,14 @@ RMNUM    .BYTE $00,$00,$01,$01,$04,$0D
 
          .BYTE $07,$17,$1A,$10,$12,$12
          .BYTE $1A,$1A,$03,$03,$03,$12
-	 .BYTE $15,$16,$17,$19,$19,$19
-	 .BYTE $09,$09,$18,$18,$16,$16
+         .BYTE $15,$16,$17,$19,$19,$19
+         .BYTE $09,$09,$18,$18,$16,$16
 
-	 .BYTE $17,$18,$1A,$09,$19,$0D
-	 .BYTE $00,$00,$01,$02,$02,$02
-	 .BYTE $05,$05,$0C,$0C,$0D,$13
-	 .BYTE $0A,$0A,$1B,$1B,$1B,$1B 
-	 .BYTE $0E,$1e,$1e,$1e,$FF
+         .BYTE $17,$18,$1A,$09,$19,$0D
+         .BYTE $00,$00,$01,$02,$02,$02
+         .BYTE $05,$05,$0C,$0C,$0D,$13
+         .BYTE $0A,$0A,$1B,$1B,$1B,$1B 
+         .BYTE $0E,$1e,$1e,$1e,$FF
 
 ; sprite-object id
 RMSPRID  .BYTE $00,$01,$00,$01,$02,$13
@@ -5605,33 +5605,33 @@ RMSPRID  .BYTE $00,$01,$00,$01,$02,$13
 
          .BYTE $0C,$0D,$0E,$0E,$0E,$0E
          .BYTE $0F,$0F,$0F,$0F,$0F,$12
-	 .BYTE $10,$11,$10,$0E,$0E,$0E
-	 .BYTE $0E,$0E,$11,$11,$11,$11
+         .BYTE $10,$11,$10,$0E,$0E,$0E
+         .BYTE $0E,$0E,$11,$11,$11,$11
 
-	 .BYTE $11,$11,$0E,$05,$05,$13
-	 .BYTE $00,$00,$05,$13,$13,$13
-	 .BYTE $13,$13,$02,$02,$02,$0a
-	 .BYTE $0f,$0f,$14,$14,$14,$14
+         .BYTE $11,$11,$0E,$05,$05,$13
+         .BYTE $00,$00,$05,$13,$13,$13
+         .BYTE $13,$13,$02,$02,$02,$0a
+         .BYTE $0f,$0f,$14,$14,$14,$14
 
-	 .BYTE $15,$16,$0e,$0e,$FF
+         .BYTE $15,$16,$0e,$0e,$FF
 ; animation speed
 ; smaller value = faster speed
 RMANISP  .BYTE $08,$03,$05,$06,$05,$04
          .BYTE $0A,$0A,$0A,$00,$05,$05
          .BYTE $00,$08,$08,$08,$08,$00
          .BYTE $00,$07,$09,$08,$08,$08
-	 
+         
          .BYTE $00,$00,$04,$04,$04,$04
          .BYTE $0A,$0B,$0B,$0B,$0B,$04
-	 .BYTE $05,$05,$05,$03,$04,$05
-	 .BYTE $03,$04,$07,$07,$05,$04
+         .BYTE $05,$05,$05,$03,$04,$05
+         .BYTE $03,$04,$07,$07,$05,$04
 
-	 .BYTE $05,$07,$05,$05,$05,$04
-	 .BYTE $08,$09,$05,$04,$05,$06
-	 .BYTE $05,$05,$04,$04,$04,$05
-	 .BYTE $05,$05,$05,$04,$03,$06
+         .BYTE $05,$07,$05,$05,$05,$04
+         .BYTE $08,$09,$05,$04,$05,$06
+         .BYTE $05,$05,$04,$04,$04,$05
+         .BYTE $05,$05,$05,$04,$03,$06
 
-	 .BYTE $00,$05,$05,$04,$FF
+         .BYTE $00,$05,$05,$04,$FF
 
 ; movement speed
 ; greater value = slower speed
@@ -5642,15 +5642,15 @@ RMMOVSP  .BYTE $00,$04,$00,$00,$00,$00
 
          .BYTE $00,$00,$00,$00,$00,$00
          .BYTE $00,$00,$00,$00,$00,$00
-	 .BYTE $00,$00,$00,$00,$00,$00
-	 .BYTE $00,$00,$00,$00,$00,$00
+         .BYTE $00,$00,$00,$00,$00,$00
+         .BYTE $00,$00,$00,$00,$00,$00
 
-	 .BYTE $00,$00,$00,$00,$00,$00
-	 .BYTE $00,$00,$00,$00,$00,$00
-	 .BYTE $00,$00,$00,$00,$00,$00
-	 .BYTE $00,$00,$01,$00,$02,$03
+         .BYTE $00,$00,$00,$00,$00,$00
+         .BYTE $00,$00,$00,$00,$00,$00
+         .BYTE $00,$00,$00,$00,$00,$00
+         .BYTE $00,$00,$01,$00,$02,$03
 
-	 .BYTE $00,$00,$00,$01,$FF
+         .BYTE $00,$00,$00,$01,$FF
 
 ; movement step in pixels
 ; greater value = step wider
@@ -5661,15 +5661,15 @@ RMMOVSTP .BYTE $02,$02,$01,$02,$02,$02
 
          .BYTE $00,$00,$02,$01,$01,$02
          .BYTE $01,$01,$01,$02,$01,$00
-	 .BYTE $02,$02,$02,$02,$01,$02
-	 .BYTE $01,$02,$01,$01,$01,$02
+         .BYTE $02,$02,$02,$02,$01,$02
+         .BYTE $01,$02,$01,$01,$01,$02
 
-	 .BYTE $01,$01,$02,$01,$02,$01
-	 .BYTE $01,$01,$01,$01,$02,$03
-	 .BYTE $01,$01,$01,$01,$01,$01
-	 .BYTE $01,$01,$01,$01,$02,$01
+         .BYTE $01,$01,$02,$01,$02,$01
+         .BYTE $01,$01,$01,$01,$02,$03
+         .BYTE $01,$01,$01,$01,$01,$01
+         .BYTE $01,$01,$01,$01,$02,$01
 
-	 .BYTE $00,$01,$01,$01,$FF
+         .BYTE $00,$01,$01,$01,$FF
 
 ; sprite-object state (store to OBJSTA)
 ;  sprite-object's state:
@@ -5710,15 +5710,15 @@ RMOBSTAI .BYTE $0B,$07,$07,$0b,$23,$0B
 
          .BYTE $40,$40,$57,$53,$53,$47
          .BYTE $17,$2B,$17,$1B,$2B,$42
-	 .BYTE $07,$07,$07,$53,$47,$63
-	 .BYTE $53,$47,$17,$27,$17,$2B
+         .BYTE $07,$07,$07,$53,$47,$63
+         .BYTE $53,$47,$17,$27,$17,$2B
 
-	 .BYTE $27,$1B,$53,$07,$0B,$13
-	 .BYTE $07,$07,$07,$13,$23,$13
-	 .BYTE $1B,$2B,$13,$23,$23,$07
-	 .BYTE $17,$27,$07,$07,$0b,$0b
+         .BYTE $27,$1B,$53,$07,$0B,$13
+         .BYTE $07,$07,$07,$13,$23,$13
+         .BYTE $1B,$2B,$13,$23,$23,$07
+         .BYTE $17,$27,$07,$07,$0b,$0b
 
-	 .BYTE $40,$17,$53,$53,$FF
+         .BYTE $40,$17,$53,$53,$FF
 ; dynamic values, restored from RMOBSTAI
 ; when new game starting 
 RMOBSTA  .BYTE $0B,$07,$07,$0b,$23,$0B
@@ -5728,15 +5728,15 @@ RMOBSTA  .BYTE $0B,$07,$07,$0b,$23,$0B
 
          .BYTE $40,$40,$57,$53,$53,$47
          .BYTE $17,$2B,$17,$1B,$2B,$42
-	 .BYTE $07,$07,$07,$53,$47,$63
-	 .BYTE $53,$47,$17,$27,$17,$2B
+         .BYTE $07,$07,$07,$53,$47,$63
+         .BYTE $53,$47,$17,$27,$17,$2B
 
-	 .BYTE $27,$47,$53,$07,$0B,$13
-	 .BYTE $07,$07,$07,$13,$23,$13
-	 .BYTE $1B,$2B,$13,$23,$23,$07
-	 .BYTE $17,$27,$07,$07,$0b,$0b
+         .BYTE $27,$47,$53,$07,$0B,$13
+         .BYTE $07,$07,$07,$13,$23,$13
+         .BYTE $1B,$2B,$13,$23,$23,$07
+         .BYTE $17,$27,$07,$07,$0b,$0b
 
-	 .BYTE $40,$17,$53,$53,$FF
+         .BYTE $40,$17,$53,$53,$FF
          
 ; LOCATIONS:
 ; x: $20...$E8
@@ -5748,15 +5748,15 @@ RMMINX   .BYTE $20,$20,$25,$20,$df,$30
 
          .BYTE $C2,$96,$5D,$2A,$2A,$3a
          .BYTE $90,$90,$20,$18,$18,$6a
-	 .BYTE $B0,$20,$20,$20,$30,$D8
-	 .BYTE $50,$60,$20,$18,$20,$20
+         .BYTE $B0,$20,$20,$20,$30,$D8
+         .BYTE $50,$60,$20,$18,$20,$20
 
-	 .BYTE $20,$20,$68,$A0,$50,$8C
-	 .BYTE $20,$20,$20,$30,$70,$B0
-	 .BYTE $18,$18,$30,$70,$68,$b0
-	 .BYTE $20,$20,$30,$40,$60,$a0
+         .BYTE $20,$20,$68,$A0,$50,$8C
+         .BYTE $20,$20,$20,$30,$70,$B0
+         .BYTE $18,$18,$30,$70,$68,$b0
+         .BYTE $20,$20,$30,$40,$60,$a0
 
-	 .BYTE $F0,$20,$50,$28,$FF
+         .BYTE $F0,$20,$50,$28,$FF
 ; max x-location (<=$E8)
 RMMAXX   .BYTE $D0,$A0,$5D,$B0,$df,$F7
          .BYTE $5D,$A0,$C0,$BC,$90,$60
@@ -5765,14 +5765,14 @@ RMMAXX   .BYTE $D0,$A0,$5D,$B0,$df,$F7
 
          .BYTE $C2,$96,$C2,$2A,$2A,$78
          .BYTE $F7,$F7,$F7,$F7,$F7,$6a
-	 .BYTE $F7,$F7,$B0,$18,$D0,$D8
-	 .BYTE $50,$B0,$F7,$F7,$F7,$F7
+         .BYTE $F7,$F7,$B0,$18,$D0,$D8
+         .BYTE $50,$B0,$F7,$F7,$F7,$F7
 
-	 .BYTE $8C,$F7,$68,$F7,$F7,$8C
-	 .BYTE $D0,$F0,$F7,$30,$70,$B0
-	 .BYTE $DF,$DF,$30,$70,$68,$f7
-	 .BYTE $b0,$b0,$b0,$90,$a0,$c0
-	 .BYTE $F0,$f0,$50,$28,$FF
+         .BYTE $8C,$F7,$68,$F7,$F7,$8C
+         .BYTE $D0,$F0,$F7,$30,$70,$B0
+         .BYTE $DF,$DF,$30,$70,$68,$f7
+         .BYTE $b0,$b0,$b0,$90,$a0,$c0
+         .BYTE $F0,$f0,$50,$28,$FF
 ; initial x-location
 RMINIX   .BYTE $25,$22,$22,$38,$df,$32
          .BYTE $5D,$A0,$C0,$BC,$80,$50
@@ -5781,14 +5781,14 @@ RMINIX   .BYTE $25,$22,$22,$38,$df,$32
 
          .BYTE $C2,$96,$C2,$2A,$2A,$60
          .BYTE $9C,$9C,$5D,$8C,$C2,$6a
-	 .BYTE $B0,$8C,$8C,$18,$8C,$D8
-	 .BYTE $50,$80,$90,$F0,$40,$B0
+         .BYTE $B0,$8C,$8C,$18,$8C,$D8
+         .BYTE $50,$80,$90,$F0,$40,$B0
 
-	 .BYTE $40,$30,$68,$A0,$90,$8C
-	 .BYTE $C0,$70,$63,$30,$70,$B0
-	 .BYTE $80,$80,$30,$70,$68,$b2
-	 .BYTE $50,$a0,$a0,$80,$90,$b0
-	 .BYTE $F0,$a0,$50,$28,$FF
+         .BYTE $40,$30,$68,$A0,$90,$8C
+         .BYTE $C0,$70,$63,$30,$70,$B0
+         .BYTE $80,$80,$30,$70,$68,$b2
+         .BYTE $50,$a0,$a0,$80,$90,$b0
+         .BYTE $F0,$a0,$50,$28,$FF
 
 ; y: $3A...$DD
 ; min y-location (=>$3a)
@@ -5799,14 +5799,14 @@ RMMINY   .BYTE $5D,$B5,$64,$9d,$26,$60
 
          .BYTE $DA,$cD,$D0,$35,$54,$82
          .BYTE $26,$26,$26,$26,$26,$70
-	 .BYTE $ed,$D0,$cd,$40,$A0,$80
-	 .BYTE $6C,$C8,$26,$26,$26,$26
+         .BYTE $ed,$D0,$cd,$40,$A0,$80
+         .BYTE $6C,$C8,$26,$26,$26,$26
 
-	 .BYTE $30,$26,$26,$36,$3E,$26
-	 .BYTE $5D,$DD,$DD,$60,$40,$30
-	 .BYTE $2E,$95,$63,$b0,$63,$d6
-	 .BYTE $26,$26,$30,$50,$a0,$c0
-	 .BYTE $DD,$40,$b0,$85,$FF
+         .BYTE $30,$26,$26,$36,$3E,$26
+         .BYTE $5D,$DD,$DD,$60,$40,$30
+         .BYTE $2E,$95,$63,$b0,$63,$d6
+         .BYTE $26,$26,$30,$50,$a0,$c0
+         .BYTE $DD,$40,$b0,$85,$FF
 ; max y-location (<=$dd)
 RMMAXY   .BYTE $5D,$B5,$64,$9d,$B0,$60
          .BYTE $C0,$Af,$d8,$6D,$B0,$DD
@@ -5815,14 +5815,14 @@ RMMAXY   .BYTE $5D,$B5,$64,$9d,$B0,$60
 
          .BYTE $DA,$cD,$D0,$C5,$DD,$82
          .BYTE $DD,$DD,$DD,$DD,$DD,$70
-	 .BYTE $ed,$D0,$cd,$B0,$B0,$B0
-	 .BYTE $DD,$C8,$DD,$DD,$DD,$DD
+         .BYTE $ed,$D0,$cd,$B0,$B0,$B0
+         .BYTE $DD,$C8,$DD,$DD,$DD,$DD
 
-	 .BYTE $DD,$DD,$60,$36,$3E,$DD
-	 .BYTE $5D,$DD,$DD,$A8,$B0,$DD
-	 .BYTE $88,$DD,$dd,$dd,$dd,$d6
-	 .BYTE $dd,$dd,$30,$50,$a0,$c0
-	 .BYTE $DD,$dd,$d0,$dd,$FF
+         .BYTE $DD,$DD,$60,$36,$3E,$DD
+         .BYTE $5D,$DD,$DD,$A8,$B0,$DD
+         .BYTE $88,$DD,$dd,$dd,$dd,$d6
+         .BYTE $dd,$dd,$30,$50,$a0,$c0
+         .BYTE $DD,$dd,$d0,$dd,$FF
 ; initial y-location
 RMINIY   .BYTE $5D,$B5,$64,$9d,$90,$60
          .BYTE $35,$A0,$d0,$6D,$BA,$DD
@@ -5831,14 +5831,14 @@ RMINIY   .BYTE $5D,$B5,$64,$9d,$90,$60
 
          .BYTE $DA,$cD,$D0,$40,$E4,$82
          .BYTE $82,$82,$54,$82,$B0,$70
-	 .BYTE $ed,$D0,$cd,$8E,$A0,$70
-	 .BYTE $80,$C8,$B2,$8E,$B2,$50
+         .BYTE $ed,$D0,$cd,$8E,$A0,$70
+         .BYTE $80,$C8,$B2,$8E,$B2,$50
 
-	 .BYTE $80,$30,$40,$36,$3E,$B0
-	 .BYTE $5D,$DD,$DD,$8E,$8E,$8E
-	 .BYTE $6C,$B2,$b7,$d0,$a0,$d6
-	 .BYTE $60,$a0,$30,$50,$a0,$c0
-	 .BYTE $DD,$bb,$c0,$b0,$FF
+         .BYTE $80,$30,$40,$36,$3E,$B0
+         .BYTE $5D,$DD,$DD,$8E,$8E,$8E
+         .BYTE $6C,$B2,$b7,$d0,$a0,$d6
+         .BYTE $60,$a0,$30,$50,$a0,$c0
+         .BYTE $DD,$bb,$c0,$b0,$FF
 ; sprite colour
 RMSPRCOL .BYTE $01,$02,$01,$0B,$05,$04
          .BYTE $03,$08,$0A,$05,$07,$09
@@ -5847,14 +5847,14 @@ RMSPRCOL .BYTE $01,$02,$01,$0B,$05,$04
 
          .BYTE $06,$06,$06,$06,$06,$0F
          .BYTE $07,$07,$07,$07,$07,$02
-	 .BYTE $02,$02,$02,$0B,$0C,$0F
-	 .BYTE $01,$0A,$0B,$0B,$01,$01
+         .BYTE $02,$02,$02,$0B,$0C,$0F
+         .BYTE $01,$0A,$0B,$0B,$01,$01
 
-	 .BYTE $01,$0B,$08,$09,$09,$04
-	 .BYTE $01,$01,$09,$01,$02,$03
-	 .BYTE $02,$03,$04,$05,$08,$03
-	 .BYTE $07,$07,$01,$02,$03,$04
-	 .BYTE $01,$03,$07,$0d,$FF
+         .BYTE $01,$0B,$08,$09,$09,$04
+         .BYTE $01,$01,$09,$01,$02,$03
+         .BYTE $02,$03,$04,$05,$08,$03
+         .BYTE $07,$07,$01,$02,$03,$04
+         .BYTE $01,$03,$07,$0d,$FF
          
 ;--------------------------------------
 ; DYNAMIC ACTIVE OBJECT DATA TABLES
@@ -5964,7 +5964,7 @@ OBJSPCNT .BYTE $00,$00,$00,$00,$00,$00,$00
 ; $26-29 not in use
 ; $30-$39 o numbers from 0 to 9
 ; $3c b 1 ROOM GRAPHICS START FROM HERE --- flower
-; $3d b	1 flower
+; $3d b        1 flower
 ; $3e b 0-2 spiders web (p1, hires) 
 ; $3f o ?
 ; $40 cf 0 ladder
@@ -6083,7 +6083,7 @@ FLORCHRS .BYTE $40,$41,$42,$43,$44,$48,$49
          .BYTE $6F,$70,$78,$79,$7A,$7B;!!! eka oli muuttunut $7F:msi muutin takaisin $6f:ksi, seuraa käyttäytymistä
          .BYTE $7C,$7D,$7E,$7F,$8C,$8D
          .BYTE $8E,$A9,$AA,$AB,$AD,$AE
-	 .BYTE $AF,$00
+         .BYTE $AF,$00
          
 ; HISSIMERKIT
 
@@ -6151,7 +6151,7 @@ CHARCOLS ; from char 60 ($3C)
          .BYTE $0F,$0F,$0F,$0F,$0F,$0F
          ; $6C...
          .BYTE $0F,$0F,$0F,$0F,$0A,$06
-	 ; $72...
+         ; $72...
          .BYTE $09,$09,$09,$09,$0F,$0F
          ; $78...
          .BYTE $0A,$0A,$0A,$0A,$0E,$0E
@@ -6168,28 +6168,28 @@ CHARCOLS ; from char 60 ($3C)
          .BYTE $0F,$0F,$09,$0F,$0A,$09
          ; $A8...
          .BYTE $0D,$0f,$0f,$0f,$0F,$0F
-	; $ae...
+        ; $ae...
          .BYTE $0F,$0f,$01,$01,$01,$0F
          
 ;--------------------------------------
 ; ROOM COLOURS
 ;--------------------------------------
-; $00	musta
-; $01	valkoinen
-; $02	punainen
-; $03	cyan
-; $04	purppura
-; $05	vihreä
-; $06	sininen
-; $07	keltainen
-; $08	oranssi
-; $09	ruskea
-; $0A	vaalean punainen
-; $0B	harmaa 1
-; $0C	harmaa 2
-; $0D	vaalean vihreä
-; $0E	vaalean sininen
-; $0F	harmaa 3
+; $00        musta
+; $01        valkoinen
+; $02        punainen
+; $03        cyan
+; $04        purppura
+; $05        vihreä
+; $06        sininen
+; $07        keltainen
+; $08        oranssi
+; $09        ruskea
+; $0A        vaalean punainen
+; $0B        harmaa 1
+; $0C        harmaa 2
+; $0D        vaalean vihreä
+; $0E        vaalean sininen
+; $0F        harmaa 3
 ;--------------------------------------
 ; ROOMTYPE id's for each room.
 ; The room type id indicates the colour
@@ -6205,12 +6205,12 @@ CHARCOLS ; from char 60 ($3C)
 ; character colours (colour #3).
 
 ROOMTYPE .BYTE $00,$00,$00,$01,$01,$00 
-	 .BYTE $01,$01,$03,$02,$01,$00 ; -> $0b
-	 .BYTE $00,$00,$02,$02,$02,$02
-	 .BYTE $02,$02,$02,$03,$03,$03 ; -> $17
+         .BYTE $01,$01,$03,$02,$01,$00 ; -> $0b
+         .BYTE $00,$00,$02,$02,$02,$02
+         .BYTE $02,$02,$02,$03,$03,$03 ; -> $17
 
-	 .BYTE $01,$02,$01,$02,$00,$00 ; -> $1d 
-	 .BYTE $02,$00 ; -> $1f (last room)
+         .BYTE $01,$02,$01,$02,$00,$00 ; -> $1d 
+         .BYTE $02,$00 ; -> $1f (last room)
 
 ; todo: mieti väriskeemat kullekin huonetyypille
 ; ja fiksaa merkistö sen mukaisesti
@@ -6339,55 +6339,55 @@ OBJHI    .BYTE $07,$07,$06,$04,$06,$07
 
 ; item descriptions
 OBJDSC0 .enc screen
-	.BYTE "RING"
-	.enc none
-	.BYTE $00
+        .BYTE "RING"
+        .enc none
+        .BYTE $00
 OBJDSC1 .enc screen
-	.BYTE "HAT"
-	.enc none
-	.BYTE $00
+        .BYTE "HAT"
+        .enc none
+        .BYTE $00
 OBJDSC2 .enc screen
-	.BYTE "HARMONICA"
-	.enc none
-	.BYTE $00
+        .BYTE "HARMONICA"
+        .enc none
+        .BYTE $00
 OBJDSC3 .enc screen
-	.BYTE "MAGNIFYING GLASS"
-	.enc none
-	.BYTE $00
+        .BYTE "MAGNIFYING GLASS"
+        .enc none
+        .BYTE $00
 OBJDSC4 .enc screen
-	.BYTE "KEY"
-	.enc none
-	.BYTE $00
+        .BYTE "KEY"
+        .enc none
+        .BYTE $00
 OBJDSC5 .enc screen
-	.BYTE "HANDBAG"
-	.enc none
-	.BYTE $00
+        .BYTE "HANDBAG"
+        .enc none
+        .BYTE $00
 OBJDSC6 .enc screen
-	.BYTE "BUTTON"
-	.enc none
-	.BYTE $00
+        .BYTE "BUTTON"
+        .enc none
+        .BYTE $00
 OBJDSC7 .enc screen
-	.BYTE "DYNAMITE"
-	.enc none
-	.BYTE $00
+        .BYTE "DYNAMITE"
+        .enc none
+        .BYTE $00
 OBJDSC8 .enc screen
-	.BYTE "CANDLE"
-	.enc none
-	.BYTE $00
+        .BYTE "CANDLE"
+        .enc none
+        .BYTE $00
 OBJDSC9 .enc screen
-	.BYTE "RUBY"
-	.enc none
-	.BYTE $00
+        .BYTE "RUBY"
+        .enc none
+        .BYTE $00
 OBJDSC10
-	.enc screen
-	.BYTE "ANCIENT SCROLL CONTAINING MAGIC WORDS"
-	.enc none
-	.BYTE $00
+        .enc screen
+        .BYTE "ANCIENT SCROLL CONTAINING MAGIC WORDS"
+        .enc none
+        .BYTE $00
 OBJDSC11
-	.enc screen
-	.BYTE "ENERGY BOOST"
-	.enc none
-	.BYTE $00
+        .enc screen
+        .BYTE "ENERGY BOOST"
+        .enc none
+        .BYTE $00
 
 ; ORA values for items returned to 
 ; their owner.
@@ -6428,10 +6428,10 @@ OWNITEMS .BYTE $02,$03,$00,$05,$01,$06
 ;--------------------------------------
 OBJOWN   .BYTE $FF,$FF,$FF,$02,$03,$FF
          .BYTE $00,$FF,$01,$05,$FF,$06
-	 ; $0C.....:
-	 .BYTE $FF,$FF,$FF,$FF,$FF,$FF
-	 ; $12....:
-	 .BYTE $09
+         ; $0C.....:
+         .BYTE $FF,$FF,$FF,$FF,$FF,$FF
+         ; $12....:
+         .BYTE $09
 ;--------------------------------------
 
 ;--------------------------------------
