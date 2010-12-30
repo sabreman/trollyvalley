@@ -35,7 +35,7 @@ else
 	exit $?
 fi
 
-if pucrunch -ffast -x 32768 mtmp > mo
+if pucrunch -ffast -x 32768 mtmp > moedit
 then 
 	echo "Source packed"
 else 
@@ -44,7 +44,7 @@ fi
 
 if which c1541 >/dev/null
 then
-	if c1541 -format lvedit,mo d64 lvedit.d64 -write data/troll -write mo -write data/chr
+	if c1541 -format lvedit,mo d64 lvedit.d64 -write data/ldedit -write moedit -write data/chr
 	then 
 		echo "Disk image created!" 
 	else 

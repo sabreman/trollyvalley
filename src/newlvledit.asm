@@ -1,8 +1,12 @@
 
+scrmemp1            = $0400
+scrmemp2            = $0500
+scrmemp3            = $0600
+scrmemp4            = $0700
 ; store character set to basic memory
-chrdata  = $3800 ;(...->$4000)
-vicmemctrlreg = $d018
-vicctrlreg = $D016
+chrdata             = $3800 ;... $3fff
+vicmemctrlreg       = $d018
+vicctrlreg          = $d016
 
           ; sys 32768
           *= $8000 
@@ -10,6 +14,8 @@ vicctrlreg = $D016
 
           jsr ldchrset 
           jsr initchrset
+          jsr clearscr
+          jsr printchs
 
 ;------------------------------------
 mainloop
@@ -50,8 +56,7 @@ ldchrset
           ldy #>fnchrset      ; pointer to file name (hi-byte)
           jsr $ffbd           ; SETNAM routine
                     
-          ; call LOAD (Load or verify file)
-          ; kernal routine
+          ; call LOAD (Load or verify file) ; kernal routine
           lda #$00            ; 0 = load, 1-255 verify
           ; set the memory location where to store the data:
           ldx #<chrdata       ; load address (low-byte)
@@ -108,6 +113,43 @@ initchrset
          sta vicctrlreg
 
          rts
+
+;------------------------------------
+clearscr  
+          ; fill screen memory with
+          ; empty space characters
+
+          lda #$20            ; empty space character
+          ldx #$00
+clearscr1
+          ; screen memory starts from $0400
+          sta scrmemp1,x         
+          sta scrmemp2,x
+          sta scrmemp3,x
+          dex
+          bne clearscr1
+
+          ; clear the rest of the screen until $07e7
+          ldx #$e7
+clearscr2
+          sta scrmemp4,x
+          dex
+          bne clearscr2
+          sta scrmemp4 
+          rts
+;------------------------------------
+printchs
+          ; prints the loaded charset
+          ; to the start of screen memory
+
+          ldx #$00
+          txa
+printchs1
+          sta scrmemp1,x
+          txa
+          inx
+          bne printchs1
+          rts
 ;------------------------------------
 fnchrset  .text "CHR"
 
