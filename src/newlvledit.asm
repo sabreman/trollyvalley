@@ -1,3 +1,5 @@
+; currently pressed keycode is stored to $00cb
+currkey             = $cb
 
 scrmemp1            = $0400
 scrmemp2            = $0500
@@ -19,8 +21,29 @@ vicctrlreg          = $d016
 
 ;------------------------------------
 mainloop
-          rts
-          ; jmp mainloop 
+          jsr readk
+          jmp mainloop 
+;------------------------------------
+readk
+          lda currkey 
+          ; if no key is pressed, it holds the value #$40
+          cmp #$40
+          beq readkx
+
+          ; f1 key
+          cmp #$04
+          bne readkf3
+          jsr printchs 
+          jmp readkx
+
+          ; f3 key
+readkf3   cmp #$05
+          ; do something else
+          jmp readkx
+
+          ; read more keys 
+
+readkx    rts
 ;------------------------------------
 ldchrset
           ; call SETLFS (Set up a logical file) 
