@@ -7,17 +7,25 @@ scrmemp3            = $0600
 scrmemp4            = $0700
 ; store character set to basic memory
 chrdata             = $3800 ;... $3fff
-vicmemctrlreg       = $d018
+; vic-II control register
 vicctrlreg          = $d016
+; vic memory control register
+vicmemctrlreg       = $d018
+; background color #0 
+bgcolor0            = $d021
+; background color #1 
+bgcolor1            = $d022
+; background color #2 
+bgcolor2            = $d023
 
           ; sys 32768
           *= $8000 
 ; initializing:
 
-          jsr ldchrset 
-          jsr initchrset
-          jsr clearscr
-          jsr printchs
+;         jsr ldchrset 
+;         jsr initchrset
+;         jsr clearscr
+;         jsr printchs
 
 ;------------------------------------
 mainloop
@@ -33,17 +41,41 @@ readk
           ; f1 key
           cmp #$04
           bne readkf3
-          jsr printchs 
+          jsr tglchrst
           jmp readkx
 
           ; f3 key
 readkf3   cmp #$05
-          ; do something else
+          bne readkf5
+          inc bgcolor0 
           jmp readkx
 
-          ; read more keys 
+          ; f5
+readkf5   cmp #$06
+          bne readkf7
+          inc bgcolor1 
+          jmp readkx
+
+          ; f7
+readkf7   cmp #$03
+          bne readkx
+          inc bgcolor2 
+          jmp readkx
 
 readkx    rts
+;------------------------------------
+tglchrst 
+          ; toggles character mode 
+          ; standard / multicolor
+
+          ; Set multicolor mode 
+          ; (bit 4 in vic control register)
+
+          lda vicctrlreg
+          eor #$10             ; 00010000
+          sta vicctrlreg
+
+          rts
 ;------------------------------------
 ldchrset
           ; call SETLFS (Set up a logical file) 
