@@ -1,12 +1,29 @@
 ; currently pressed keycode is stored to $00cb
 currkey             = $cb
 
+; free memory:
+; $02
+; $fb-$fe
+; $02a7-$02ff
+; $0313
+; $0335-$033b
+
+; $03fc-$03ff
+; $c000-$cfff
+
+; index of selected character
+curchind            = $0334
+
 scrmemp1            = $0400
 scrmemp2            = $0500
 scrmemp3            = $0600
 scrmemp4            = $0700
 ; store character set to basic memory
 chrdata             = $3800 ;... $3fff
+; raster register
+; returns the lower 8 bits of the current raster position
+; raster is not visible between 51...251
+raster              = $d012
 ; vic-II control register
 vicctrlreg          = $d016
 ; vic memory control register
@@ -22,15 +39,25 @@ bgcolor2            = $d023
           *= $8000 
 ; initializing:
 
-;         jsr ldchrset 
-;         jsr initchrset
-;         jsr clearscr
-;         jsr printchs
+          jsr ldchrset 
+          jsr initchrset
+          jsr clearscr
+          jsr printchs
+          jsr init
 
 ;------------------------------------
 mainloop
+          lda raster
+          cmp #$ff
+          bne mainloop ; busy wait
+          
           jsr readk
           jmp mainloop 
+;------------------------------------
+init
+          lda #$00
+          sta curchind
+          rts
 ;------------------------------------
 readk
           lda currkey 
@@ -58,11 +85,33 @@ readkf5   cmp #$06
 
           ; f7
 readkf7   cmp #$03
-          bne readkx
+          bne readko
           inc bgcolor2 
           jmp readkx
 
+          ;O
+readko    cmp #$26
+          bne readkp
+          dec curchind
+          jsr setselch
+          jmp readkx
+
+          ;P
+readkp    cmp #$29
+          bne readkx
+          inc curchind
+          jsr setselch
+          jmp readkx
+
 readkx    rts
+
+;------------------------------------
+setselch
+          ; print selected character 
+          ; to screen
+          lda curchind
+          sta $0518
+          rts
 ;------------------------------------
 tglchrst 
           ; toggles character mode 
@@ -206,5 +255,6 @@ printchs1
           bne printchs1
           rts
 ;------------------------------------
+
 fnchrset  .text "CHR"
 
