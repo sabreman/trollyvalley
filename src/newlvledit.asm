@@ -9,6 +9,7 @@ tmpahi              = $fc
 tmpblo              = $fd
 tmpbhi              = $fe
 
+btmp                = $02a7
 
 ; free memory:
 ; $02a7-$02ff
@@ -206,7 +207,18 @@ setselch1
           ; in the character memory
           lda (tmpblo),y      ; load (indirectly) a byte of character data 
           sta atmp
-          jsr rendbyte
+
+          ; render byte according to character mode:
+          ; normal or multi color 
+          lda vicctrlreg
+          and #$10            ; 00010000
+          bne setselch2
+
+          jsr rendbyte        ; normal
+          jmp setselch3
+
+setselch2 jsr rendbytm        ; multi color
+setselch3
 
           ; set the start of next row in the character editor
           ; screen memory ( 40 chars - 8 chars -> add #$20)
@@ -253,6 +265,78 @@ rendbyte3
           iny
           cpy #$08            ; was this last bit to be rendered?
           bne rendbyte1       ; continue if not...
+
+          ; restore y from stack
+          pla                 ; stack -> acc
+          tay                 ; acc -> y
+
+          rts
+;------------------------------------
+rendbytm
+          ; render a multicolor character byte from right to left 
+          ; to given position in screen memory
+
+          ; atmp contains byte to be rendered
+          ; tmpalo/-hi contains the start byte in screen memory
+
+          ; multicolor character is created by bit pairs:
+          ; 00 background color #0 (screen color) $d021
+          ; 01 background color #1                $d022
+          ; 10 background color #2                $d023
+          ; 11 character color                    color RAM
+
+          ; store y to stack
+          tya                 ; y -> acc
+          pha                 ; acc -> stack
+
+          ; The bit pairs will be tested by rolling the 
+          ; character data byte two bits per iteration
+          ; to the right. A bitmask 11000000 will be used
+          ; to evaluate only the first two bits. 
+
+          ; the marker character will be drawn using 
+          ; the '11' bytes and the color ram will be used
+          ; for coloring
+
+          ldy #$00            ; index to screen memory
+                              ; need y for indirect access
+
+rendbytm1
+          lda atmp
+          and #$c0            ; 11000000 check only 2 bytes per iteration 
+
+          cmp #$00
+          bne rendbytm2
+          ; draw pair of empty space chars
+          lda #$20            ; empty space
+          jmp rendbytm5
+
+rendbytm2 cmp #$01
+          bne rendbytm3
+          ; draw pair of bg color #1 marker chars 
+          lda curchind ; todo
+          jmp rendbytm5
+
+rendbytm3 cmp #$02
+          bne rendbytm4
+          ; draw pair of bg color #2 marker chars
+          lda curchind ; todo
+          jmp rendbytm5
+
+rendbytm4 ; cmp #$03 no need to compare any more
+          ; draw pair of character color marker chars
+          lda curchind ; todo
+
+rendbytm5 
+          ; shift atmp left by a bit pair
+          rol atmp
+          rol atmp
+          sta (tmpalo),y      ; store empty or mark to char editor screen mem
+          iny
+          sta (tmpalo),y
+          iny
+          cpy #$08            ; was this last bit to be rendered?
+          bne rendbytm1       ; continue if not...
 
           ; restore y from stack
           pla                 ; stack -> acc
