@@ -9,10 +9,17 @@ tmpahi              = $fc
 tmpblo              = $fd
 tmpbhi              = $fe
 
+tmpclo              = $2b     ; pointer to ...
+tmpchi              = $2c     ; ... star of BASIC txt
+
+tmpdlo              = $37     ; pointer to highest...
+tmpelo              = $38     ; ... address used by BASIC
+
 btmp                = $02a7
+ctmp                = $02a8
 
 ; free memory:
-; $02a7-$02ff
+; $02a9-$02ff
 ; $0313
 ; $0337-$033b
 
@@ -279,6 +286,9 @@ rendbytm
           ; atmp contains byte to be rendered
           ; tmpalo/-hi contains the start byte in screen memory
 
+          ; set tmpclo/-hi to point to color memory accordingly
+          jsr getcolm 
+
           ; multicolor character is created by bit pairs:
           ; 00 background color #0 (screen color) $d021
           ; 01 background color #1                $d022
@@ -301,39 +311,66 @@ rendbytm
           ldy #$00            ; index to screen memory
                               ; need y for indirect access
 
+          ; color to be used will be stored to btmp
+          ; char to be used will be stored to ctmp
 rendbytm1
           lda atmp
           and #$c0            ; 11000000 check only 2 bytes per iteration 
 
-          cmp #$00
+          cmp #$00            ; 00
           bne rendbytm2
           ; draw pair of empty space chars
           lda #$20            ; empty space
+          sta ctmp
           jmp rendbytm5
 
-rendbytm2 cmp #$01
+rendbytm2 cmp #$40            ; 01
           bne rendbytm3
           ; draw pair of bg color #1 marker chars 
-          lda curchind ; todo
+          lda bgcolor1 
+          sta btmp
+          lda #$66 ; curchind ; todo
+          sta ctmp
+
+          inc $d020
+
           jmp rendbytm5
 
-rendbytm3 cmp #$02
+rendbytm3 cmp #$80            ; 10
           bne rendbytm4
           ; draw pair of bg color #2 marker chars
-          lda curchind ; todo
+          lda bgcolor2 
+          sta btmp
+          lda #$66 ; curchind ; todo
+          sta ctmp
+
+          inc $d020
+
           jmp rendbytm5
 
-rendbytm4 ; cmp #$03 no need to compare any more
+rendbytm4 cmp #$c0                    ; 11 
+          bne rendbytm5
+          ; cmp #$03 no need to compare any more
           ; draw pair of character color marker chars
-          lda curchind ; todo
+          lda #$66 ; curchind ; todo
+          sta ctmp
+
+          lda #$04 ; TODO: set dynamically
+          sta btmp
 
 rendbytm5 
           ; shift atmp left by a bit pair
           rol atmp
           rol atmp
+          lda ctmp
           sta (tmpalo),y      ; store empty or mark to char editor screen mem
+          lda btmp 
+          sta (tmpclo),y
           iny
+          lda ctmp
           sta (tmpalo),y
+          lda btmp 
+          sta (tmpclo),y
           iny
           cpy #$08            ; was this last bit to be rendered?
           bne rendbytm1       ; continue if not...
@@ -537,6 +574,33 @@ dmpstdch1
           ; switch back interrupts
           cli 
 
+          rts
+;------------------------------------
+getcolm
+
+          ; This routine sets pointer to color
+          ; memory. Zero page adresses 
+          ; tmpalo/-hi must contain
+          ; location in screen memory.
+
+          ; Color memory pointer is set to
+          ; zero page adresses tmpclo/-hi.
+          ;
+          ; Screen memory location pointer 
+          ; values tmpalo/-hi are added with 
+          ; $d400 and sum is stored to 
+          ; tmpclo/-hi as screen colour 
+          ; memory pointers. These pointers 
+          ; are used to set colour value
+          ; to right location in screen.
+
+          clc
+          lda tmpalo 
+          adc #$00
+          sta tmpclo 
+          lda tmpahi 
+          adc #$d4
+          sta tmpchi 
           rts
 ;------------------------------------
 
