@@ -1434,10 +1434,11 @@ printnum3 ; show tens (x-reg)
 ;
 ;--------------------------------------
 GETCOLM
-         CLC
          LDA SCRLO
-         ADC #$00
+         ; no need to add low byte (#$00)
          STA LOTMP
+
+         CLC
          LDA SCRHI
          ADC #$D4
          STA HITMP

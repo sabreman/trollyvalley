@@ -287,7 +287,7 @@ rendbytm
           ; tmpalo/-hi contains the start byte in screen memory
 
           ; set tmpclo/-hi to point to color memory accordingly
-          jsr getcolm 
+          jsr chm2colm 
 
           ; multicolor character is created by bit pairs:
           ; 00 background color #0 (screen color) $d021
@@ -576,8 +576,7 @@ dmpstdch1
 
           rts
 ;------------------------------------
-getcolm
-
+chm2colm
           ; This routine sets pointer to color
           ; memory. Zero page adresses 
           ; tmpalo/-hi must contain
@@ -585,7 +584,7 @@ getcolm
 
           ; Color memory pointer is set to
           ; zero page adresses tmpclo/-hi.
-          ;
+          
           ; Screen memory location pointer 
           ; values tmpalo/-hi are added with 
           ; $d400 and sum is stored to 
@@ -594,10 +593,29 @@ getcolm
           ; are used to set colour value
           ; to right location in screen.
 
-          clc
-          lda tmpalo 
-          adc #$00
+          ; load screen memory pointer low byte 
+          ; and store to color memory pointer low byte
+          lda tmpalo          
           sta tmpclo 
+
+          ; load screen memory pointer high byte
+          ; add #$d4 to it and store to color memory
+          ; pointer high byte
+
+          ; NOTE: since the low byte is of the memory
+          ; offset value is #$00 there's no need to use
+          ; the calculation of lowbyte. Otherwise an addition
+          ; using carry would be needed:
+
+          ; clc ; clear carry
+          ; lda tmpalo
+          ; adc somevalue ; add with carry
+          ; sta tmpalo
+          ; lda tmpahi
+          ; adc anothervalue ; add with carry
+          ; sta tmpahi
+
+          clc
           lda tmpahi 
           adc #$d4
           sta tmpchi 
