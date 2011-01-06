@@ -1,3 +1,6 @@
+; Trolly Valley editor
+; (C) Mikko Keinänen 2011
+
 atmp                = $02
 ; currently pressed keycode is stored to $00cb
 currkey             = $cb
