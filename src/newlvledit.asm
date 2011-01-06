@@ -36,6 +36,10 @@ scrmemp2            = $0500
 scrmemp3            = $0600
 scrmemp4            = $0700
 
+; a screen memory location to present 
+; the selected character (1:1)
+scrcurch            = $0518
+
 ; start address of character editor area
 ; (magnified character)
 chedstart           = $0608
@@ -187,16 +191,20 @@ inccurchx
           rts
 ;------------------------------------
 setselch
+          ; prints selected character to screen 1:1
+          ; and magnified to 8:1 (a character presents
+          ; each bit in character data)
+
           ; print selected character to screen
           lda curchind
-          sta $0518
+          sta scrcurch 
 
           ; * character data is stored to 'chrdata'
           ; * each character consists of 8 bytes
           ; * character memory offset for selected
           ;   character is curchind * 8 bytes
           ; * tmpblo/-hi points to selected character
-          ;   data in the character memory
+          ;   data in the character data in memory
 
           ; store the start of memory to print the magnified character
           lda #<chedstart
@@ -212,7 +220,7 @@ setselch
 setselch1
           ; tmpblo/-hi points to selected character's data
           ; in the character memory
-          lda (tmpblo),y      ; load (indirectly) a byte of character data 
+          lda (tmpblo),y      ; load a byte from character data 
           sta atmp
 
           ; render byte according to character mode:
@@ -228,13 +236,13 @@ setselch2 jsr rendbytm        ; multi color
 setselch3
 
           ; set the start of next row in the character editor
-          ; screen memory ( 40 chars - 8 chars -> add #$20)
-          clc
+          ; screen memory 
+          clc                 ; clear carry
           lda tmpalo
-          adc #$28
+          adc #$28            ; add a row
           sta tmpalo
           lda tmpahi
-          adc #$00
+          adc #$00            ; add carry (if set)
           sta tmpahi
 
           iny                 ; next byte in memory, next row in editor
@@ -249,6 +257,9 @@ rendbyte
 
           ; atmp contains byte to be rendered
           ; tmpalo/-hi contains the start byte in screen memory
+
+          ; set tmpclo/-hi to point to color memory accordingly
+          jsr chm2colm 
 
           ; store y to stack
           tya                 ; y -> acc
@@ -269,6 +280,8 @@ rendbyte2
 
 rendbyte3 
           sta (tmpalo),y      ; store empty or mark to char editor screen mem
+          lda #$03            ; TODO: set colour dynamically
+          sta (tmpclo),y
           iny
           cpy #$08            ; was this last bit to be rendered?
           bne rendbyte1       ; continue if not...
@@ -329,11 +342,8 @@ rendbytm2 cmp #$40            ; 01
           ; draw pair of bg color #1 marker chars 
           lda bgcolor1 
           sta btmp
-          lda #$66 ; curchind ; todo
+          lda #$66
           sta ctmp
-
-          inc $d020
-
           jmp rendbytm5
 
 rendbytm3 cmp #$80            ; 10
@@ -341,18 +351,15 @@ rendbytm3 cmp #$80            ; 10
           ; draw pair of bg color #2 marker chars
           lda bgcolor2 
           sta btmp
-          lda #$66 ; curchind ; todo
+          lda #$66
           sta ctmp
-
-          inc $d020
-
           jmp rendbytm5
 
-rendbytm4 cmp #$c0                    ; 11 
+rendbytm4 cmp #$c0            ; 11 
           bne rendbytm5
           ; cmp #$03 no need to compare any more
           ; draw pair of character color marker chars
-          lda #$66 ; curchind ; todo
+          lda #$66
           sta ctmp
 
           lda #$04 ; TODO: set dynamically
@@ -391,6 +398,8 @@ tglchrst
           lda vicctrlreg
           eor #$10             ; 00010000
           sta vicctrlreg
+
+          jsr setselch
 
           rts
 ;------------------------------------
