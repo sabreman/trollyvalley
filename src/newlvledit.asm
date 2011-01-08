@@ -1,5 +1,15 @@
 ; Trolly Valley editor
 ; (C) Mikko Keinänen 2011
+; 
+; Instructions
+; Character editor:
+; F1      : toggle multicolor / normal
+; F3      : increase background color 0
+; F5      : increase background color 1
+; F7      : incerase background color 2
+; O       : select previous character for editing
+; P       : select next character for editing
+; Q       : toggle charset half being edited
 
 atmp                = $02
 ; currently pressed keycode is stored to $00cb
@@ -21,8 +31,12 @@ tmpelo              = $38     ; ... address used by BASIC
 btmp                = $02a7
 ctmp                = $02a8
 
+; bit 0:  0 first 1k of charset being edited
+;         1 second 1k of charset being edited
+prgstate            = $02a9
+
 ; free memory:
-; $02a9-$02ff
+; $02aa-$02ff
 ; $0313
 ; $0337-$033b
 
@@ -86,10 +100,11 @@ bgcolor2            = $d023
 
           ;jsr ldchrset 
           jsr dmpstdch
-          ;jsr initchrset
+          jsr initchrset
           jsr clearscr
-          jsr printchs
           jsr init
+          jsr cpchedmem
+          jsr printchs
 
 ;------------------------------------
 mainloop
@@ -101,6 +116,9 @@ mainloop
           jmp mainloop 
 ;------------------------------------
 init
+          lda #$00
+          sta prgstate
+
           ; Set the index of current character
           ; and minimum / maximum character index
           lda #$80
@@ -157,9 +175,16 @@ readko    cmp #$26
 
           ;P
 readkp    cmp #$29
-          bne readkx
+          bne readkq
           jsr inccurch
           jmp readkx
+
+          ;Q
+readkq    cmp #$3e
+          bne readkx
+          jsr tgchedmem  
+          jmp readkx
+
 
 readkx    rts
 
@@ -507,9 +532,9 @@ initchrset
          ; Set multicolor mode 
          ; (4th bit in vic control register)
 
-         lda vicctrlreg
-         ora #$10             ; 00010000
-         sta vicctrlreg
+         ;lda vicctrlreg
+         ;ora #$10             ; 00010000
+         ;sta vicctrlreg
 
          rts
 
@@ -549,6 +574,135 @@ printchs1
           inx
           iny
           bne printchs1
+          rts
+
+;------------------------------------
+tgchedmem
+          jsr stchedmem
+          lda prgstate
+          eor #$01
+          sta prgstate
+          jsr cpchedmem
+          jsr setselch
+          rts
+;------------------------------------
+mvchredmem
+          ; copies 1k of character memory being edited
+          ; to/from edit memory bank
+          ; the source memory is indexed indirectly
+          ; using zero page addresses tmpalo/-hi
+          ; the target memory using tmpclo/-hi
+          ; set tmpalo/-hi and tmpclo/-hi using
+          ; cpchedmem when copying a character set half
+          ; for editing and
+          ; stchedmem when storing a character set half
+          ; being edited
+
+          ; TODO: to use this more generally set x in calling 
+          ; routine.
+          ldx #$04  ; go through 4 pages of memory
+          ldy #$00
+
+mvchredmem1
+          lda (tmpalo),y
+          sta (tmpclo),y
+          iny
+          bne mvchredmem1
+          ; y is now zero
+
+          ; offset memory pointers tmpalo/-hi
+          ; and tmpclo/-hi by one memory page
+          ; (increase high-order byte by one)
+          inc tmpahi
+          inc tmpchi
+          dex
+          bne mvchredmem1 
+
+          rts
+
+;------------------------------------
+cpchedmem
+          ; copies the half of character set being
+          ; edited from chrdadaed1/2 to chrdata2
+
+          ; check the program state, which half are
+          ; we editing
+          lda prgstate
+          lsr       ; check the bit 0 
+          bcs cpchedmem1 
+          ; set pointer to memory for characters 0-127
+          lda #<chrdataed1
+          sta tmpalo
+          lda #>chrdataed1
+          sta tmpahi
+          jmp cpchedmem2
+
+cpchedmem1 
+          ; ... characters 128-255
+          lda #<chrdataed2
+          sta tmpalo
+          lda #>chrdataed2
+          sta tmpahi
+
+cpchedmem2
+
+          ; copy to chrdata2
+          lda #<chrdata2
+          sta tmpclo
+          lda #>chrdata2
+          sta tmpchi
+          jsr mvchredmem
+          rts
+
+          ;ldx #$04  ; go through 4 pages of memory
+          ;ldy #$00
+
+;cpchedmem2
+          ;lda (tmpalo),y
+          ;sta (tmpclo),y
+          ;iny
+          ;bne cpchedmem2
+
+          ; offset memory pointers tmpalo/-hi
+          ; and tmpclo/-hi by one memory page
+          ; (increase high-order byte by one)
+          ;inc tmpahi
+          ;inc tmpchi
+          ;dex
+          ;bne dmpstdch1
+
+          ;rts
+;------------------------------------
+stchedmem
+          ; stores the half of character set being
+          ; edited from chrdata2 to chrdadaed1/2
+
+          ; check the program state, which half are
+          ; we editing
+          lda prgstate
+          lsr       ; check the bit 0 
+          bcs stchedmem1 
+          ; set pointer to memory for characters 0-127
+          lda #<chrdataed1
+          sta tmpclo
+          lda #>chrdataed1
+          sta tmpchi
+          jmp stchedmem2
+stchedmem1 
+          ; ... characters 128-255
+          lda #<chrdataed2
+          sta tmpclo
+          lda #>chrdataed2
+          sta tmpchi
+stchedmem2
+
+          ; copy to chrdata2
+          lda #<chrdata2
+          sta tmpalo
+          lda #>chrdata2
+          sta tmpahi
+
+          jsr mvchredmem
           rts
 ;------------------------------------
 dmpstdch 
