@@ -48,9 +48,23 @@ scrcurch            = $0518
 chedstart           = $0608
 
 ; store character set to basic memory
-chrdata             = $3800 ;... $3fff
+
+; character set being edited (half a set at time)
+; character data for characters 0-127
+chrdataed1          = $3000 ;... $33ff
+; character data for characters 128-255 
+chrdataed2          = $3400 ;... $37ff
+
+; the standard character set is copied to $3800
+; the editor ui will use the lower half of the character 
+chrdata1            = $3800 ;... $3bff
+; the half being edited from $3000-$37ff will be copied
+; to $3c00-$3fff 
+chrdata2            = $3c00 ;... $3fff
+
 ; character generator ROM image
 chrrom              = $d000 ;... $dfff
+
 ; raster register
 ; returns the lower 8 bits of the current raster position
 ; raster is not visible between 51...251
@@ -89,17 +103,18 @@ mainloop
 init
           ; Set the index of current character
           ; and minimum / maximum character index
-          lda #$00
+          lda #$80
           sta curchind
           sta minchind
           lda #$ff
           sta maxchind
 
           ; set the pointer to current character
-          ; in the character memory.
-          lda #<chrdata
+          ; in the character memory top half
+          ; where character being edited are loeaded to
+          lda #<chrdata2
           sta tmpblo 
-          lda #>chrdata
+          lda #>chrdata2
           sta tmpbhi
 
           rts
@@ -443,8 +458,8 @@ ldchrset
           ; call LOAD (Load or verify file) ; kernal routine
           lda #$00            ; 0 = load, 1-255 verify
           ; set the memory location where to store the data:
-          ldx #<chrdata       ; load address (low-byte)
-          ldy #>chrdata       ; load address (hi-byte)
+          ldx #<chrdata1      ; load address (low-byte)
+          ldy #>chrdata1      ; load address (hi-byte)
           jsr $ffd5           ; LOAD routine
 
           rts
@@ -523,22 +538,23 @@ clearscr2
           rts
 ;------------------------------------
 printchs
-          ; prints the loaded charset
+          ; prints the characters 128-255 
           ; to the start of screen memory
 
           ldx #$00
-          txa
+          ldy #$80
 printchs1
+          tya
           sta scrmemp1,x
-          txa
           inx
+          iny
           bne printchs1
           rts
 ;------------------------------------
 dmpstdch 
           ; dumps standard character set from 
           ; character generator ROM to 
-          ; RAM (chrdata) for editing
+          ; RAM (chrdata1) for editing
 
           ; turn off interrupts
           sei
@@ -549,15 +565,23 @@ dmpstdch
           and #$fb            ; 11111011
           sta $01
 
+          ; location of character rom
           lda #<chrrom
           sta tmpalo
           lda #>chrrom
           sta tmpahi
 
-          lda #<chrdata
+          ; location of characters used in screen
+          lda #<chrdata1
           sta tmpblo
-          lda #>chrdata
+          lda #>chrdata1
           sta tmpbhi
+
+          ; location of character set being edited
+          lda #<chrdataed1
+          sta tmpclo
+          lda #>chrdataed1
+          sta tmpchi
 
           ; character memory is now in $d000-$dfff
           ; dump the character memory
@@ -566,14 +590,17 @@ dmpstdch
 dmpstdch1
           lda (tmpalo),y
           sta (tmpblo),y
+          sta (tmpclo),y
           iny
           bne dmpstdch1
           ;ldy #$00 ; this is alredy 00
 
-          ; offset a page to tmpalo/-hi
-          ; (increase high byte by one)
+          ; offset memory pointers tmpalo/-hi, tmpblo/-hi
+          ; and tmpclo/-hi by one memory page
+          ; (increase high-order byte by one)
           inc tmpahi
           inc tmpbhi
+          inc tmpchi
           dex
           bne dmpstdch1
 
