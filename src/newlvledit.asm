@@ -184,10 +184,35 @@ readkp    cmp #$29
 
           ;Q
 readkq    cmp #$3e
-          bne readkx
+          bne readkz
           jsr tgchedmem  
           jmp readkx
 
+readkz    ; Z (editor cursor left)
+          cmp #$0c
+          bne readkxx
+          jsr mvlft
+          jmp readkx
+
+readkxx   ; X (edit cursor right)
+          cmp #$17
+          bne readkk
+          jsr mvrgt
+          jmp readkx
+
+readkk    ; K (editor cursor up)
+          cmp #$25
+          bne readkm
+          jsr mvup
+          jmp readkx
+
+readkm    ; M (editor cursor down)
+          cmp #$24
+          bne readkx
+          jsr mvdown
+          jmp readkx
+
+          ; ...
 
 readkx    rts
 
@@ -843,6 +868,18 @@ chm2colm
           lda tmpahi 
           adc #$d4
           sta tmpchi 
+          rts
+;------------------------------------
+mvlft     
+          rts
+;------------------------------------
+mvrgt
+          rts
+;------------------------------------
+mvup
+          rts
+;------------------------------------
+mvdown
           rts
 ;------------------------------------
 
