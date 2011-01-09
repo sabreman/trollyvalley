@@ -3,10 +3,10 @@
 ; 
 ; Instructions
 ; Character editor:
-; F1      : toggle multicolor / normal
-; F3      : increase background color 0
-; F5      : increase background color 1
-; F7      : incerase background color 2
+; 1      : toggle multicolor / normal
+; 2      : increase background color 0
+; 3      : increase background color 1
+; 4      : incerase background color 2
 ; O       : select previous character for editing
 ; P       : select next character for editing
 ; Q       : toggle charset half being edited
@@ -139,32 +139,35 @@ init
 ;------------------------------------
 readk
           lda currkey 
+
           ; if no key is pressed, it holds the value #$40
           cmp #$40
           beq readkx
 
+          jsr readnumk
+
           ; f1 key
           cmp #$04
           bne readkf3
-          jsr tglchrst
+          ;jsr tglchrst
           jmp readkx
 
           ; f3 key
 readkf3   cmp #$05
           bne readkf5
-          inc bgcolor0 
+          ;inc bgcolor0 
           jmp readkx
 
           ; f5
 readkf5   cmp #$06
           bne readkf7
-          inc bgcolor1 
+          ;inc bgcolor1 
           jmp readkx
 
           ; f7
 readkf7   cmp #$03
           bne readko
-          inc bgcolor2 
+          ;inc bgcolor2 
           jmp readkx
 
           ;O
@@ -188,6 +191,34 @@ readkq    cmp #$3e
 
 readkx    rts
 
+;------------------------------------
+readnumk
+          ; key 1
+          cmp #$38
+          bne readk2
+          jsr tglchrst
+          jmp readknumx
+
+          ; key 2
+readk2    cmp #$3b
+          bne readk3
+          inc bgcolor0 
+          jmp readknumx
+
+          ; key 3 
+readk3    cmp #$08
+          bne readk4
+          inc bgcolor1 
+          jmp readknumx
+
+          ; key 4 
+readk4    cmp #$0b
+          bne readknumx
+          inc bgcolor2 
+          jmp readknumx
+readknumx
+
+          rts
 ;------------------------------------
 deccurch
           ; do not decrease if minimum index reached
