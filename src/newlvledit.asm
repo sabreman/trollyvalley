@@ -25,18 +25,24 @@ tmpbhi              = $fe
 tmpclo              = $2b     ; pointer to ...
 tmpchi              = $2c     ; ... star of BASIC txt
 
+; tmpdlo/-hi will be used as a pointer to editor screen memory
 tmpdlo              = $37     ; pointer to highest...
-tmpelo              = $38     ; ... address used by BASIC
+tmpdhi              = $38     ; ... address used by BASIC
 
 btmp                = $02a7
 ctmp                = $02a8
 
 ; bit 0:  0 first 1k of charset being edited
 ;         1 second 1k of charset being edited
+; bit 1:  this is only for keeping track every second main loop run
+;         for blinking cursor and maybe some other stuff
 prgstate            = $02a9
 
+; current pixel in chr editor area
+currpx              = $02aa
+
 ; free memory:
-; $02aa-$02ff
+; $02ab-$02ff
 ; $0313
 ; $0337-$033b
 
@@ -113,11 +119,13 @@ mainloop
           bne mainloop ; busy wait
           
           jsr readk
+          jsr showcur
           jmp mainloop 
 ;------------------------------------
 init
           lda #$00
           sta prgstate
+          sta currpx
 
           ; Set the index of current character
           ; and minimum / maximum character index
@@ -134,6 +142,13 @@ init
           sta tmpblo 
           lda #>chrdata2
           sta tmpbhi
+
+          ; set the pointer to current pixel
+          ; in the editor area
+          lda #<chedstart
+          sta tmpdlo
+          lda #>chedstart
+          sta tmpdhi
 
           rts
 ;------------------------------------
@@ -242,6 +257,62 @@ readk4    cmp #$0b
           inc bgcolor2 
           jmp readknumx
 readknumx
+
+          rts
+;------------------------------------
+showcur 
+          ; blink the current selection
+          ; in the character editor
+
+          ; the current location of editor cursor
+          ; is in tmpdlo / -hi
+
+          ; single color character consists of 8 bytes => 8 x 8 bytes and also 64 pixels 
+          ; a multi color pixel consists of a bit pair
+          ; if in multicolor mode the tmpdlo/-hi points to left bit of bit pair 
+
+          ; fetch the color memory from cursor location
+          ; set tmpclo/-hi to point to screen memory in cursor location
+          lda tmpdlo
+          sta tmpclo
+          clc
+          lda tmpdhi
+          adc #$d4            ; offset is #$d400
+          sta tmpchi
+          ldy #$00
+
+          ; load current colour to acc and store to x-register
+          lda (tmpclo),y
+          tax
+
+          ; check the program state bit 1 (blink or not to blink)
+          lda prgstate
+          and #$02            ; 00000010
+          bne  showcur1
+
+          dex       ; back to original colour
+          jmp showcur2
+showcur1
+          inx       ; increase the color by one 
+showcur2
+          txa 
+          sta (tmpclo),y
+
+          ; check if in multicolor state
+          lda vicctrlreg
+          and #$10            ; 00010000
+          beq showcurx
+
+          ; blink also the other "zoomed" 
+          iny
+          txa 
+          sta (tmpclo),y
+
+showcurx
+          ; flip the "every second round" bit
+          lda prgstate
+          eor #$02
+          sta prgstate
 
           rts
 ;------------------------------------
