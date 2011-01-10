@@ -41,8 +41,11 @@ prgstate            = $02a9
 ; current pixel in chr editor area
 currpx              = $02aa
 
+cursora             = $02ab
+cursorb             = $02ac
+
 ; free memory:
-; $02ab-$02ff
+; $02ad-$02ff
 ; $0313
 ; $0337-$033b
 
@@ -119,7 +122,7 @@ mainloop
           bne mainloop ; busy wait
           
           jsr readk
-          jsr showcur
+          jsr showcr
           jmp mainloop 
 ;------------------------------------
 init
@@ -257,6 +260,57 @@ readk4    cmp #$0b
           inc bgcolor2 
           jmp readknumx
 readknumx
+
+          rts
+;------------------------------------
+showcr 
+          ; blink the current selection
+          ; in the character editor
+
+          ; the current location of editor cursor
+          ; is in tmpdlo / -hi
+
+          ; single color character consists of 8 bytes => 8 x 8 bytes and also 64 pixels 
+          ; a multi color pixel consists of a bit pair
+          ; if in multicolor mode the tmpdlo/-hi points to left bit of bit pair 
+
+
+          ldy #$00
+
+          ; check the program state bit 1 (blink or not to blink)
+          lda prgstate
+          and #$02            ; 00000010
+          bne  showcr1
+
+          ; restore the original character
+          lda cursorb
+          jmp showcr2
+showcr1
+          ; store the original character
+          lda (tmpdlo),y
+          sta cursorb
+          ; loat the cursor character
+          lda cursora
+showcr2
+          sta (tmpdlo),y
+          ; store the character to x
+          tax
+
+          ; check if in multicolor state
+          lda vicctrlreg
+          and #$10            ; 00010000
+          beq showcrx
+
+          ; blink also the other "zoomed" 
+          txa 
+          iny
+          sta (tmpdlo),y
+
+showcrx
+          ; flip the "every second round" bit
+          lda prgstate
+          eor #$02
+          sta prgstate
 
           rts
 ;------------------------------------
