@@ -34,8 +34,6 @@ ctmp                = $02a8
 
 ; bit 0:  0 first 1k of charset being edited
 ;         1 second 1k of charset being edited
-; bit 1:  this is only for keeping track every second main loop run
-;         for blinking cursor and maybe some other stuff
 prgstate            = $02a9
 
 ; current pixel in chr editor area
@@ -44,8 +42,13 @@ currpx              = $02aa
 cursora             = $02ab
 cursorb             = $02ac
 
+crsrx               = $02ad
+crsry               = $02ae
+crsrmax             = $02af
+crsrmay             = $02b0
+
 ; free memory:
-; $02ad-$02ff
+; $02af-$02ff
 ; $0313
 ; $0337-$033b
 
@@ -122,13 +125,18 @@ mainloop
           bne mainloop ; busy wait
           
           jsr readk
-          jsr showcr
+          ;jsr showcur
           jmp mainloop 
 ;------------------------------------
 init
           lda #$00
           sta prgstate
           sta currpx
+          sta crsrx
+          sta crsry
+          lda #$07
+          sta crsrmax
+          sta crsrmay
 
           ; Set the index of current character
           ; and minimum / maximum character index
@@ -152,6 +160,8 @@ init
           sta tmpdlo
           lda #>chedstart
           sta tmpdhi
+
+          ; set the cursor position
 
           rts
 ;------------------------------------
@@ -277,21 +287,42 @@ showcr
 
           ldy #$00
 
-          ; check the program state bit 1 (blink or not to blink)
-          lda prgstate
-          and #$02            ; 00000010
-          bne  showcr1
+          ; check the program counter (blink or not to blink)
+
+          ; cmp substracts given value from value in accumulator
+          ; (the result is not stored to accumulator).
+          ; 
+          ; Normally when subtracting values with carry (SBC), 
+          ; the C (carry) flag must be set. If the resulting 
+          ; value "overflows", the C is set to 0. 
+          ;
+          ; There's no need to set the C 
+          ; flag With CMP instruction explicitily.
+          ;
+          ; When comparing values with CMP:
+          ; If the values are equal the z-flag is set.
+          ;
+          ; If the compared value less than value in accumulator
+          ; the C flag is on.
+          ;
+          ; If compared value is greater than the value
+          ; in accumulator the result overflows and the C 
+          ; flag is not set (when adding this is opposite).
+          ;lda prgcount
+          cmp #$80            ; 128
+          bcc showcr2         ; < 128
+          bcs showcr3         ; > 128
 
           ; restore the original character
           lda cursorb
-          jmp showcr2
-showcr1
+          jmp showcr3
+showcr2
           ; store the original character
           lda (tmpdlo),y
           sta cursorb
           ; loat the cursor character
           lda cursora
-showcr2
+showcr3
           sta (tmpdlo),y
           ; store the character to x
           tax
@@ -315,9 +346,7 @@ showcrx
           rts
 ;------------------------------------
 showcur 
-          ; blink the current selection
-          ; in the character editor
-
+          rts
           ; the current location of editor cursor
           ; is in tmpdlo / -hi
 
@@ -472,6 +501,85 @@ setselch3
           iny                 ; next byte in memory, next row in editor
           cpy #$08
           bne setselch1
+
+          jsr shwcrsr
+          rts
+;------------------------------------
+rstcrsr
+          ; the current location of editor cursor
+          ; is set to tmpdlo / -hi
+
+          ; restore the previous state
+          ldy #$00
+          lda cursorb
+          sta (tmpdlo),y
+
+          rts
+;------------------------------------
+shwcrsr   
+          ; the current location of editor cursor
+          ; is set to tmpdlo / -hi
+
+          ; store the previous state
+          lda (tmpdlo),y
+          sta cursorb
+
+          ldy #$00
+          lda cursora
+          sta (tmpdlo),y
+          rts
+
+
+          ; reset tmpdlo/-hi
+
+          lda #<chedstart
+          sta tmpdlo
+          lda #>chedstart
+          sta tmpdhi
+          
+          ; add columns
+          clc
+          lda tmpdlo 
+          adc crsrx 
+          sta tmpdlo
+          lda tmpdhi
+          adc #$00
+          sta tmpdhi
+
+          ldx crsry
+          cpx #$00
+          beq shwcrsr2
+
+          ; add rows
+shwcrsr1
+          clc
+          lda tmpdlo
+          adc #$28
+          sta tmpdlo
+          lda tmpdhi
+          adc #$00
+          sta tmpdhi
+          dex
+          bne shwcrsr1
+
+shwcrsr2
+
+          ; single color character consists of 8 bytes => 8 x 8 bytes and also 64 pixels 
+          ; a multi color pixel consists of a bit pair
+          ; if in multicolor mode the tmpdlo/-hi points to left bit of bit pair 
+
+          ; the original character will be stored to
+          ; cursorb
+
+          ; the cursor character value is stored in
+          ; cursora
+
+          ldy #$00
+          lda (tmpdlo),y
+          sta cursorb
+
+          lda cursora
+          sta (tmpdlo),y
 
           rts
 ;------------------------------------
@@ -996,15 +1104,83 @@ chm2colm
           rts
 ;------------------------------------
 mvlft     
+          lda crsrx
+          cmp #$00
+          beq mvlftx
+          dec crsrx
+          
+          jsr rstcrsr
+
+          sec
+          lda tmpdlo
+          sbc #$01
+          sta tmpdlo
+          lda tmpdhi
+          sbc #$00
+          sta tmpdhi
+
+          jsr shwcrsr
+mvlftx
           rts
 ;------------------------------------
 mvrgt
+          lda crsrx
+          cmp crsrmax
+          beq mvrgtx
+          inc crsrx      
+
+          jsr rstcrsr
+
+          clc 
+          lda tmpdlo
+          adc #$01
+          sta tmpdlo
+          lda tmpdhi
+          adc #$00
+          sta tmpdhi
+
+          jsr shwcrsr
+mvrgtx
           rts
 ;------------------------------------
 mvup
+          lda crsry
+          cmp #$00 
+          beq mvupx
+          dec crsry      
+
+          jsr rstcrsr
+
+          sec
+          lda tmpdlo
+          sbc #$28
+          sta tmpdlo
+          lda tmpdhi
+          sbc #$00
+          sta tmpdhi
+
+          jsr shwcrsr
+mvupx
           rts
 ;------------------------------------
 mvdown
+          lda crsry
+          cmp crsrmay
+          beq mvdownx
+          inc crsry      
+
+          jsr rstcrsr
+
+          clc 
+          lda tmpdlo
+          adc #$28
+          sta tmpdlo
+          lda tmpdhi
+          adc #$00
+          sta tmpdhi
+
+          jsr shwcrsr
+mvdownx
           rts
 ;------------------------------------
 
