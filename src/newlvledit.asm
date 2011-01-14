@@ -46,9 +46,10 @@ crsrx               = $02ad
 crsry               = $02ae
 crsrmax             = $02af
 crsrmay             = $02b0
+crsrstep            = $02b1
 
 ; free memory:
-; $02af-$02ff
+; $02b2-$02ff
 ; $0313
 ; $0337-$033b
 
@@ -136,6 +137,8 @@ init
           lda #$07
           sta crsrmax
           sta crsrmay
+          lda #$01
+          sta crsrstep
 
           ; Set the index of current character
           ; and minimum / maximum character index
@@ -402,7 +405,6 @@ shwcrsr
           sta (tmpdlo),y
           rts
 
-
           ; reset tmpdlo/-hi
 
           lda #<chedstart
@@ -593,8 +595,7 @@ rendbytm5
 
           rts
 ;------------------------------------
-tglchrst 
-          ; toggles character mode 
+tglchrst  ; toggles character mode 
           ; standard / multicolor
 
           ; Set multicolor mode 
@@ -604,8 +605,51 @@ tglchrst
           eor #$10             ; 00010000
           sta vicctrlreg
 
-          jsr setselch
+          and #$10            ; 00010000
+          bne tglchrst1 
 
+          ; single color
+          ; cursor step is one
+          lda #$01
+          sta crsrstep
+          jmp tglchrst2 
+
+tglchrst1 ; multi color
+          ; cursor step is two
+          ; restore character under cursor
+          jsr rstcrsr
+
+          ; reset cursor
+          lda #$00
+          sta crsrx
+          sta crsry
+
+          lda #<chedstart
+          sta tmpdlo
+          lda #>chedstart
+          sta tmpdhi
+
+          ; TODO replace reset cursor with this after implementing screen memory setting by cursor index:
+          ;lda #$02
+          ;sta crsrstep
+
+          ; set the cursor position divisible by 2
+          ;lda crsrx
+          ;and #$fe
+          ;sta crsrx
+
+          ;lda crsry
+          ;and #$fe
+          ;sta crsry
+
+          ; TODO: need an update function
+          ; to set screen memory pointer according
+          ; to crsrx/-y
+
+          ; show cursor
+          jsr shwcrsr
+          
+tglchrst2 jsr setselch
           rts
 ;------------------------------------
 ldchrset
@@ -977,36 +1021,68 @@ chm2colm
           rts
 ;------------------------------------
 mvlft     
+          ; move editor cursor to left
+
+          ; check if minimum not reached
           lda crsrx
           cmp #$00
           beq mvlftx
-          dec crsrx
+
+          ; decrease cursor x value by cursor step
+          sec 
+          lda crsrx
+          sbc crsrstep
+          sta crsrx
           
+          ; restore character at current 
+          ; location
           jsr rstcrsr
 
+          ; decrease the location
+          ; tmpdlo/-hi points
+          ; to screen memory
           sec
           lda tmpdlo
-          sbc #$01
+          sbc crsrstep 
           sta tmpdlo
           lda tmpdhi
           sbc #$00
           sta tmpdhi
 
+          ; show cursor at new location
           jsr shwcrsr
 mvlftx
           rts
 ;------------------------------------
 mvrgt
+          ; move editor cursor right
           lda crsrx
           cmp crsrmax
           beq mvrgtx
-          inc crsrx      
+
+          ; extra check for multicolor
+          ; mode
+          lda vicctrlreg
+          and #$10            ; 00010000
+          beq mvrgt1 
+          lda crsrx
+          sec
+          sbc crsrmax
+          sbc #$01
+          beq mvrgtx
+
+mvrgt1
+
+          clc
+          lda crsrx      
+          adc crsrstep
+          sta crsrx
 
           jsr rstcrsr
 
           clc 
           lda tmpdlo
-          adc #$01
+          adc crsrstep 
           sta tmpdlo
           lda tmpdhi
           adc #$00
@@ -1017,6 +1093,7 @@ mvrgtx
           rts
 ;------------------------------------
 mvup
+          ; move editor cursor up
           lda crsry
           cmp #$00 
           beq mvupx
@@ -1037,6 +1114,7 @@ mvupx
           rts
 ;------------------------------------
 mvdown
+          ; move editor cursor down
           lda crsry
           cmp crsrmay
           beq mvdownx
