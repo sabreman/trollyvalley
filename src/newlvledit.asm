@@ -396,11 +396,12 @@ shwcrsr
           ; the current location of editor cursor
           ; is set to tmpdlo / -hi
 
+          ldy #$00
+
           ; store the previous state
           lda (tmpdlo),y
           sta cursorb
 
-          ldy #$00
           lda cursora
           sta (tmpdlo),y
           rts
@@ -616,6 +617,8 @@ tglchrst  ; toggles character mode
 
 tglchrst1 ; multi color
           ; cursor step is two
+          lda #$02
+          sta crsrstep 
           ; restore character under cursor
           jsr rstcrsr
 
@@ -1065,10 +1068,9 @@ mvrgt
           lda vicctrlreg
           and #$10            ; 00010000
           beq mvrgt1 
+
           lda crsrx
-          sec
-          sbc crsrmax
-          sbc #$01
+          cmp #$06
           beq mvrgtx
 
 mvrgt1
