@@ -125,7 +125,6 @@ mainloop
           bne mainloop ; busy wait
           
           jsr readk
-          ;jsr showcur
           jmp mainloop 
 ;------------------------------------
 init
@@ -270,60 +269,6 @@ readk4    cmp #$0b
           inc bgcolor2 
           jmp readknumx
 readknumx
-
-          rts
-;------------------------------------
-showcur 
-          rts
-          ; the current location of editor cursor
-          ; is in tmpdlo / -hi
-
-          ; single color character consists of 8 bytes => 8 x 8 bytes and also 64 pixels 
-          ; a multi color pixel consists of a bit pair
-          ; if in multicolor mode the tmpdlo/-hi points to left bit of bit pair 
-
-          ; fetch the color memory from cursor location
-          ; set tmpclo/-hi to point to screen memory in cursor location
-          lda tmpdlo
-          sta tmpclo
-          clc
-          lda tmpdhi
-          adc #$d4            ; offset is #$d400
-          sta tmpchi
-          ldy #$00
-
-          ; load current colour to acc and store to x-register
-          lda (tmpclo),y
-          tax
-
-          ; check the program state bit 1 (blink or not to blink)
-          lda prgstate
-          and #$02            ; 00000010
-          bne  showcur1
-
-          dex       ; back to original colour
-          jmp showcur2
-showcur1
-          inx       ; increase the color by one 
-showcur2
-          txa 
-          sta (tmpclo),y
-
-          ; check if in multicolor state
-          lda vicctrlreg
-          and #$10            ; 00010000
-          beq showcurx
-
-          ; blink also the other "zoomed" 
-          iny
-          txa 
-          sta (tmpclo),y
-
-showcurx
-          ; flip the "every second round" bit
-          lda prgstate
-          eor #$02
-          sta prgstate
 
           rts
 ;------------------------------------
