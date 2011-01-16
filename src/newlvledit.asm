@@ -18,7 +18,7 @@ currkey             = $cb
 tmpalo              = $fb
 tmpahi              = $fc 
 ; tmpblo/-hi will be used as a pointer to selected character
-; in the character memory
+; in the edit character memory
 tmpblo              = $fd
 tmpbhi              = $fe
 
@@ -238,8 +238,14 @@ readkk    ; K (editor cursor up)
 
 readkm    ; M (editor cursor down)
           cmp #$24
-          bne readkx
+          bne readkn
           jsr mvdown
+          jmp readkx
+
+readkn    ; N (set single color pixel on)
+          cmp #$27  ; 39
+          bne readkx
+          jsr px1on 
           jmp readkx
 
           ; ...
@@ -1136,6 +1142,41 @@ mvdown
 mvdownx
           rts
 ;------------------------------------
+px1on
+          ; sets selected character pixel on
 
+          ; tmpblo/-hi points to the character
+          ; being edited in the character edit
+          ; memory
+          
+          ; the byte that can be indexed using value
+          ; from crsry contains the selected bit
+          ; 
+          ; the selected bit no is contained in crsrx
+          ; but in reversed order
+
+          ldy crsry 
+          ; (tmpblo),y points to the byte
+          ; containing selected bit
+
+          ldx crsrx
+          inx
+          lda #$00 
+          ; create a mask to set the bit on
+          sec       ; set c flag to enable the first bit on
+                    ; after ror
+px1on1    ; roll bit to right until the right bit reached
+          ror
+          dex
+          bne px1on1
+
+          ; A contains the filter, set the bit on
+          ora (tmpblo),y
+          sta (tmpblo),y
+          
+          jsr setselch
+
+          rts
+;------------------------------------
 fnchrset  .text "CHR"
 
