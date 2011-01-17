@@ -699,17 +699,22 @@ ldchrset
           ; call LOAD (Load or verify file) ; kernal routine
           lda #$00            ; 0 = load, 1-255 verify
           ; set the memory location where to store the data:
-          ldx #<chrdata1      ; load address (low-byte)
-          ldy #>chrdata1      ; load address (hi-byte)
+          ldx #<chrdataed1      ; load address (low-byte)
+          ldy #>chrdataed1      ; load address (hi-byte)
           jsr $ffd5           ; LOAD routine
+          
+          jsr cpchedmem
+          jsr setselch
 
           rts
 
 ;------------------------------------
-svchrset
-          ; Save character set to disk.
-          jsr stchedmem
+svchrset ; Save character set to disk.
 
+          ; set caracter buffer being edited
+          ; to memory
+          jsr stchedmem
+          ;jsr tgchedmem
           ; "Memory is saved from an indirect address on page 0
           ; specified by the accumulator to the address stored
           ; in the .X and .Y registers."
