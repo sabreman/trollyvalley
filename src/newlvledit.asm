@@ -81,6 +81,7 @@ chedstart           = $0608
 chrdataed1          = $3000 ;... $33ff
 ; character data for characters 128-255 
 chrdataed2          = $3400 ;... $37ff
+chrdataed3          = $37ff ; character data ends
 
 ; the standard character set is copied to $3800
 ; the editor ui will use the lower half of the character 
@@ -176,16 +177,16 @@ readk
 
           jsr readnumk
 
-          ; f1 key
+          ; f1 key : load
           cmp #$04
           bne readkf3
-          ;jsr tglchrst
+          jsr ldchrset 
           jmp readkx
 
-          ; f3 key
+          ; f3 key : save
 readkf3   cmp #$05
           bne readkf5
-          ;inc bgcolor0 
+          jsr svchrset
           jmp readkx
 
           ; f5
@@ -705,6 +706,57 @@ ldchrset
           rts
 
 ;------------------------------------
+svchrset
+          ; Save character set to disk.
+          jsr stchedmem
+
+          ; "Memory is saved from an indirect address on page 0
+          ; specified by the accumulator to the address stored
+          ; in the .X and .Y registers."
+
+          ; "Sent a logical file to an input/ouput device."
+          ; call SETLFS (Set up a logical file) 
+          ; kernal routine (similar to OPEN command in BASIC)
+
+          lda #$0f ; set logical file no to 15
+          ldx #$08 ; device 8
+
+          ldy #$ff ; no command
+
+          ; call SETLFS kernal routine
+          jsr $ffba
+
+         ; setname function call
+
+         lda #$03             ; filename length
+         ldx #<fnchrset       ; filename locatin low-order byte
+         ldy #>fnchrset       ; filename location high order byte
+         jsr $ffbd            ; call SETNAM kernal routine
+
+         ; save function call
+
+         ; set data start address
+
+         lda #<chrdataed1 
+         sta tmpalo
+         lda #>chrdataed1 
+         sta tmpahi
+
+         ; set data end address
+         
+         ldx #<chrdataed3
+         ldy #>chrdataed3
+         
+         ; set data start pointer
+         ; low byte to accu
+
+         lda #<tmpalo
+
+          ; call SAVE (save memory to device)
+          jsr $ffd8
+
+          rts
+;------------------------------------
 initchrset
 
 ; Location of character memory is controlled by
@@ -792,7 +844,8 @@ printchs1
           rts
 
 ;------------------------------------
-tgchedmem
+tgchedmem ; toggle the character memory half being
+          ; edited to edit memory buffer
           jsr stchedmem
           lda prgstate
           eor #$01
