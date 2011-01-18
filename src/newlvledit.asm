@@ -733,9 +733,9 @@ svchrset ; Save character set to disk.
 
          ; setname function call
 
-         lda #$03             ; filename length
-         ldx #<fnchrset       ; filename locatin low-order byte
-         ldy #>fnchrset       ; filename location high order byte
+         lda #$06             ; filename length
+         ldx #<fnchrssv       ; filename locatin low-order byte
+         ldy #>fnchrssv       ; filename location high order byte
          jsr $ffbd            ; call SETNAM kernal routine
 
          ; save function call
@@ -1237,4 +1237,5 @@ px1on1    ; roll bit to right until the right bit reached
           rts
 ;------------------------------------
 fnchrset  .text "CHR"
+fnchrssv  .text "@0:CHR"
 
