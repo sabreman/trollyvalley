@@ -47,6 +47,8 @@ crsry               = $02ae
 crsrmax             = $02af
 crsrmay             = $02b0
 crsrstep            = $02b1
+; selected multicolor bit pair mode
+mcbitpair           = $02b2
 
 ; free memory:
 ; $02b2-$02ff
@@ -135,6 +137,7 @@ init
           sta currpx
           sta crsrx
           sta crsry
+          sta mcbitpair
           lda #$07
           sta crsrmax
           sta crsrmay
@@ -275,9 +278,42 @@ readk3    cmp #$08
 
           ; key 4 
 readk4    cmp #$0b
-          bne readknumx
+          bne readk5
           inc bgcolor2 
           jmp readknumx
+
+          ; key 5 
+          ; set multicolor bitpair 00
+readk5    cmp #$10
+          bne readk6
+          lda #$00
+          sta mcbitpair
+          jmp readknumx
+
+          ; key 6 
+          ; set multicolor bitpair 01
+readk6    cmp #$13
+          bne readk7
+          lda #$40  ; 01000000
+          sta mcbitpair
+          jmp readknumx
+
+          ; key 7 
+          ; set multicolor bitpair 10
+readk7    cmp #$18
+          bne readk8
+          lda #$80  ; 10000000
+          sta mcbitpair
+          jmp readknumx
+
+          ; key 8 
+          ; set multicolor bitpair 11
+readk8    cmp #$1b
+          bne readknumx
+          lda #$c0  ; 11000000
+          sta mcbitpair
+          jmp readknumx
+
 readknumx
 
           rts
@@ -1252,7 +1288,9 @@ pxmc1on
           ; sets selected multicolor character 
           ; pixelpair on
 
-          ; the pixelpair is set at ...?
+          ; TODO: call clear bit pair subroutine first!
+
+          ; the pixelpair is set at mcbitpair 
 
           ; tmpblo/-hi points to the character
           ; being edited in the character edit
@@ -1268,13 +1306,14 @@ pxmc1on
           ; (tmpblo),y points to the byte
           ; containing selected bit
 
-          ; TODO: store the selected bit pair combination
-          ; as a bit filter to .A
+          ; store the selected bit pair combination
+          ; as a bit mask to .A
           ; 
           ; roll the filter to the correct bit pair slot
           ; (presenting the pixel being set)
 
-          lda #$c0  ; 1100000
+          ; set the selected bit pair mode
+          lda mcbitpair ; #$c0  ; 1100000
 
           ldx crsrx
           beq pxmc1on2        ; no need to roll bits, 
