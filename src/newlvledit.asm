@@ -669,7 +669,7 @@ ldchrset
                               ; can be selected from 1...127
                               ; identifies logically the file
           ldx #$08            ; device number: 8
-          ldy #$00            ; secondary address 
+          ldy #$ff            ; secondary address (no command) 
                               ; select from 0...14 for buffer
                               ;
                               ; Wikipedia:
@@ -709,7 +709,7 @@ ldchrset
           rts
 
 ;------------------------------------
-svchrset ; Save character set to disk.
+svchrset  ; Save character set to disk.
 
           ; set caracter buffer being edited
           ; to memory
@@ -731,31 +731,31 @@ svchrset ; Save character set to disk.
           ; call SETLFS kernal routine
           jsr $ffba
 
-         ; setname function call
+          ; setname function call
 
-         lda #$06             ; filename length
-         ldx #<fnchrssv       ; filename locatin low-order byte
-         ldy #>fnchrssv       ; filename location high order byte
-         jsr $ffbd            ; call SETNAM kernal routine
+          lda #$06             ; filename length
+          ldx #<fnchrssv       ; filename locatin low-order byte
+          ldy #>fnchrssv       ; filename location high order byte
+          jsr $ffbd            ; call SETNAM kernal routine
 
-         ; save function call
+          ; save function call
 
-         ; set data start address
+          ; set data start address
 
-         lda #<chrdataed1 
-         sta tmpalo
-         lda #>chrdataed1 
-         sta tmpahi
+          lda #<chrdataed1 
+          sta tmpalo
+          lda #>chrdataed1 
+          sta tmpahi
 
-         ; set data end address
-         
-         ldx #<chrdataed3
-         ldy #>chrdataed3
-         
-         ; set data start pointer
-         ; low byte to accu
+          ; set data end address
 
-         lda #<tmpalo
+          ldx #<chrdataed3
+          ldy #>chrdataed3
+
+          ; set data start pointer
+          ; low byte to accu
+
+          lda #<tmpalo
 
           ; call SAVE (save memory to device)
           jsr $ffd8
@@ -1203,6 +1203,18 @@ mvdownx
 px1on
           ; sets selected character pixel on
 
+          ; multi color mode?
+
+          lda vicctrlreg
+          and #$10            ; 00010000
+          beq px1on2 
+
+          ; store a multi color bit pair and return
+          jsr pxmc1on
+          rts
+
+px1on2    ; single color mode
+
           ; tmpblo/-hi points to the character
           ; being edited in the character edit
           ; memory
@@ -1221,14 +1233,67 @@ px1on
           inx
           lda #$00 
           ; create a mask to set the bit on
-          sec       ; set c flag to enable the first bit on
-                    ; after ror
+          sec       ; set c flag to enable the highest 
+                    ; bit on after ror
 px1on1    ; roll bit to right until the right bit reached
           ror
           dex
           bne px1on1
 
           ; A contains the filter, set the bit on
+          ora (tmpblo),y
+          sta (tmpblo),y
+          
+          jsr setselch
+
+          rts
+;------------------------------------
+pxmc1on
+          ; sets selected multicolor character 
+          ; pixelpair on
+
+          ; the pixelpair is set at ...?
+
+          ; tmpblo/-hi points to the character
+          ; being edited in the character edit
+          ; memory
+          
+          ; the byte that can be indexed using value
+          ; from crsry contains the selected bit
+          ; 
+          ; the selected bit no is contained in crsrx
+          ; but in reversed order
+
+          ldy crsry 
+          ; (tmpblo),y points to the byte
+          ; containing selected bit
+
+          ; TODO: store the selected bit pair combination
+          ; as a bit filter to .A
+          ; 
+          ; roll the filter to the correct bit pair slot
+          ; (presenting the pixel being set)
+
+          lda #$c0  ; 1100000
+
+          ldx crsrx
+          beq pxmc1on2        ; no need to roll bits, 
+                              ; the filter is ready
+
+          ; create a mask to set the bit on
+          ; clear the c-flag to set the highest bit to 0
+          ; after rol
+          clc
+pxmc1on1  ; roll bit to right until the right bit reached
+          ; a bit pair per iteration
+          ror
+          ror
+          ; also decrease .X by two
+          dex       ; in multicolor mode the x values are
+          dex       ; 0 2 4 or 6 so the test is not going to skip
+          bne pxmc1on1
+
+pxmc1on2  ; A contains the filter, set the bit pair
           ora (tmpblo),y
           sta (tmpblo),y
           
