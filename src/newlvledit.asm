@@ -2,14 +2,25 @@
 ; (C) Mikko Keinänen 2011
 ; 
 ; Instructions
-; Character editor:
-; 1      : toggle multicolor / normal
-; 2      : increase background color 0
-; 3      : increase background color 1
-; 4      : incerase background color 2
+; Character editor keys:
+; 1       : toggle multicolor / normal
+; 2       : increase background color 0
+; 3       : increase background color 1
+; 4       : incerase background color 2
+; 5       : select multi color pixel type (00)
+; 6       : select multi color pixel type (01)
+; 7       : select multi color pixel type (10)
+; 8       : select multi color pixel type (11)
 ; O       : select previous character for editing
 ; P       : select next character for editing
 ; Q       : toggle charset half being edited
+; Z       : move editor cursor left
+; X       : move editor cursor right
+; K       : move editor cursor up
+; M       : move editor cursor down
+; N       : set pixel on
+; F1      : load charset from disk
+; F2      : save charset to disk
 
 atmp                = $02
 ; currently pressed keycode is stored to $00cb
