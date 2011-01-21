@@ -79,13 +79,15 @@ scrmemp2            = $0500
 scrmemp3            = $0600
 scrmemp4            = $0700
 
+scrmemitms          = $041e
+
 ; a screen memory location to present 
 ; the selected character (1:1)
-scrcurch            = $0518
+scrcurch            = $0678
 
 ; start address of character editor area
 ; (magnified character)
-chedstart           = $0608
+chedstart           = $06c8
 
 ; store character set to basic memory
 
@@ -883,16 +885,39 @@ clearscr2
 ;------------------------------------
 printchs
           ; prints the characters 128-255 
-          ; to the start of screen memory
 
-          ldx #$00
-          ldy #$80
+          ; set the start location in screen memory
+          ; start from column 30 ($041d) and print 10
+          ; chars per row
+
+          lda #<scrmemitms
+          sta tmpalo
+          lda #>scrmemitms
+          sta tmpahi
+
+          ldy #$00
+          ldx #$80
 printchs1
-          tya
-          sta scrmemp1,x
-          inx
+          txa
+          sta (tmpalo),y
           iny
+          cpy #$0a
+          bne printchs2 
+
+          ; 10 columns done
+          ldy #$00
+          ; add a row to screen memory pointer
+          clc 
+          lda tmpalo
+          adc #$28
+          sta tmpalo
+          lda tmpahi
+          adc #$00
+          sta tmpahi
+          
+printchs2 inx
           bne printchs1
+
           rts
 
 ;------------------------------------
