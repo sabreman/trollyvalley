@@ -19,6 +19,7 @@
 ; K       : move editor cursor up
 ; M       : move editor cursor down
 ; N       : set pixel on
+; B       : set pixel off
 ; F1      : load charset from disk
 ; F2      : save charset to disk
 
@@ -191,84 +192,101 @@ readk
           cmp #$40
           beq readkx
 
+          jsr readka
+          jsr readkb
           jsr readnumk
+readkx 
+          rts
+;------------------------------------
+
+readka
 
           ; f1 key : load
           cmp #$04
           bne readkf3
           jsr ldchrset 
-          jmp readkx
+          jmp readkax
 
           ; f3 key : save
 readkf3   cmp #$05
           bne readkf5
           jsr svchrset
-          jmp readkx
+          jmp readkax
 
           ; f5
 readkf5   cmp #$06
           bne readkf7
-          ;inc bgcolor1 
-          jmp readkx
+          nop ; TODO
+          jmp readkax
+
 
           ; f7
 readkf7   cmp #$03
           bne readko
-          ;inc bgcolor2 
-          jmp readkx
+          nop ; TODO
+          jmp readkax
 
           ;O
 readko    cmp #$26
           bne readkp
           jsr deccurch
-          jmp readkx
+          jmp readkax
 
           ;P
 readkp    cmp #$29
           bne readkq
           jsr inccurch
-          jmp readkx
+          jmp readkax
 
           ;Q
 readkq    cmp #$3e
           bne readkz
           jsr tgchedmem  
-          jmp readkx
+          jmp readkax
 
 readkz    ; Z (editor cursor left)
           cmp #$0c
           bne readkxx
           jsr mvlft
-          jmp readkx
+          jmp readkax
 
 readkxx   ; X (edit cursor right)
           cmp #$17
           bne readkk
           jsr mvrgt
-          jmp readkx
+          jmp readkax
 
 readkk    ; K (editor cursor up)
           cmp #$25
           bne readkm
           jsr mvup
-          jmp readkx
+          jmp readkax
 
 readkm    ; M (editor cursor down)
           cmp #$24
-          bne readkn
+          bne readknn
           jsr mvdown
-          jmp readkx
+          jmp readkax
 
-readkn    ; N (set single color pixel on)
+readknn    ; N (set single color pixel on)
           cmp #$27  ; 39
-          bne readkx
+          bne readkbb
           jsr px1on 
-          jmp readkx
+          jmp readkax
+
+readkbb   ; B (set single color pixel off)
+          cmp #$1c ; 28
+          bne readkax 
+          jsr px1off
+          jmp readkax
 
           ; ...
 
-readkx    rts
+readkax    rts
 
+;------------------------------------
+readkb
+          rts
 ;------------------------------------
 readnumk
           ; key 1
@@ -280,55 +298,86 @@ readnumk
           ; key 2
 readk2    cmp #$3b
           bne readk3
-          inc bgcolor0 
+          jsr incbgc0
           jmp readknumx
 
           ; key 3 
 readk3    cmp #$08
           bne readk4
-          inc bgcolor1 
+          jsr incbgc1
           jmp readknumx
 
           ; key 4 
 readk4    cmp #$0b
           bne readk5
-          inc bgcolor2 
+          jsr incbgc2
           jmp readknumx
 
           ; key 5 
           ; set multicolor bitpair 00
 readk5    cmp #$10
           bne readk6
-          lda #$00
-          sta mcbitpair
+          jsr mcbitpair0
           jmp readknumx
 
           ; key 6 
           ; set multicolor bitpair 01
 readk6    cmp #$13
           bne readk7
-          lda #$40  ; 01000000
-          sta mcbitpair
+          jsr mcbitpair1
           jmp readknumx
 
           ; key 7 
           ; set multicolor bitpair 10
 readk7    cmp #$18
           bne readk8
-          lda #$80  ; 10000000
-          sta mcbitpair
+          jsr mcbitpair2
           jmp readknumx
 
           ; key 8 
           ; set multicolor bitpair 11
 readk8    cmp #$1b
           bne readknumx
-          lda #$c0  ; 11000000
-          sta mcbitpair
+          jsr mcbitpair3
           jmp readknumx
 
 readknumx
-
+          rts
+;------------------------------------
+incbgc0
+          inc bgcolor0
+          rts
+;------------------------------------
+incbgc1
+          inc bgcolor1
+          rts
+;------------------------------------
+incbgc2
+          inc bgcolor2
+          rts
+;------------------------------------
+mcbitpair0
+          ; set multicolor bitpair 00
+          lda #$00
+          sta mcbitpair
+          rts
+;------------------------------------
+mcbitpair1
+          ; set multicolor bitpair 01
+          lda #$40  ; 01000000
+          sta mcbitpair
+          rts
+;------------------------------------
+mcbitpair2
+          ; set multicolor bitpair 10
+          lda #$80  ; 10000000
+          sta mcbitpair
+          rts
+;------------------------------------
+mcbitpair3
+          ; set multicolor bitpair 11
+          lda #$c0  ; 11000000
+          sta mcbitpair
           rts
 ;------------------------------------
 deccurch
@@ -1272,6 +1321,56 @@ mvdown
 mvdownx
           rts
 ;------------------------------------
+px1off
+          ; sets selected character pixel on
+
+          ; multi color mode?
+
+          lda vicctrlreg
+          and #$10            ; 00010000
+          beq px1off2 
+
+          ; store a multi color bit pair and return
+          jsr pxmc1on
+          rts
+
+px1off2    ; single color mode
+
+          ; tmpblo/-hi points to the character
+          ; being edited in the character edit
+          ; memory
+          
+          ; the byte that can be indexed using value
+          ; from crsry contains the selected bit
+          ; 
+          ; the selected bit no is contained in crsrx
+          ; but in reversed order
+
+          ldy crsry 
+          ; (tmpblo),y points to the byte
+          ; containing selected bit
+
+          ldx crsrx
+          inx
+          lda #$ff 
+          ; create a mask to set the bit on
+          clc       ; set c flag to enable the highest 
+                    ; bit on after ror
+px1off1    ; roll bit to right until the right bit reached
+          ror
+          dex
+          bne px1off1
+
+          ; A contains the filter, set the bit on
+          and (tmpblo),y
+          sta (tmpblo),y
+          
+          jsr setselch
+
+
+          rts
+
+;------------------------------------
 px1on
           ; sets selected character pixel on
 
@@ -1318,6 +1417,9 @@ px1on1    ; roll bit to right until the right bit reached
           
           jsr setselch
 
+          rts
+;------------------------------------
+pxmc1off
           rts
 ;------------------------------------
 pxmc1on
@@ -1378,4 +1480,3 @@ pxmc1on2  ; A contains the filter, set the bit pair
 ;------------------------------------
 fnchrset  .text "CHR"
 fnchrssv  .text "@0:CHR"
-
