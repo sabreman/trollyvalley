@@ -1322,7 +1322,7 @@ mvdownx
           rts
 ;------------------------------------
 px1off
-          ; sets selected character pixel on
+          ; sets selected character pixel off
 
           ; multi color mode?
 
@@ -1353,7 +1353,7 @@ px1off2    ; single color mode
           ldx crsrx
           inx
           lda #$ff 
-          ; create a mask to set the bit on
+          ; create a mask to set the bit off
           clc       ; set c flag to enable the highest 
                     ; bit on after ror
 px1off1    ; roll bit to right until the right bit reached
@@ -1361,12 +1361,11 @@ px1off1    ; roll bit to right until the right bit reached
           dex
           bne px1off1
 
-          ; A contains the filter, set the bit on
+          ; A contains the filter, set the bit off
           and (tmpblo),y
           sta (tmpblo),y
           
           jsr setselch
-
 
           rts
 
