@@ -1330,8 +1330,8 @@ px1off
           and #$10            ; 00010000
           beq px1off2 
 
-          ; store a multi color bit pair and return
-          jsr pxmc1on
+          ; set a multi color bit pair to 00 and return
+          jsr pxmc1off
           rts
 
 px1off2    ; single color mode
@@ -1419,6 +1419,53 @@ px1on1    ; roll bit to right until the right bit reached
           rts
 ;------------------------------------
 pxmc1off
+          ; sets selected multicolor character 
+          ; pixelpair off
+
+          ; tmpblo/-hi points to the character
+          ; being edited in the character edit
+          ; memory
+          
+          ; the byte that can be indexed using value
+          ; from crsry contains the selected bit
+          ; 
+          ; the selected bit number is contained in crsrx
+          ; but in reversed order
+
+          ldy crsry 
+          ; (tmpblo),y points to the byte
+          ; containing selected bit
+
+          ; create a bit mask to .A
+          ; 
+          ; roll the mask to the correct bit pair slot
+          ; (presenting the pixel being removed)
+
+          lda #$3f  ; 0011111
+
+          ldx crsrx
+          beq pxmc1off2      ; no need to roll bits, 
+                              ; the filter is ready
+
+          ; create a mask to set the bit off
+          ; set the c-flag to set the highest bit to 1
+          ; after rol
+          sec
+pxmc1off1 ; roll bit to right until the right bit reached
+          ; a bit pair per iteration
+          ror
+          ror
+          ; also decrease .X by two
+          dex       ; in multicolor mode the x values are
+          dex       ; 0 2 4 or 6 so the test is not going to skip
+          bne pxmc1off1
+
+pxmc1off2 ; A contains the filter, set the bit pair to 00
+          and (tmpblo),y
+          sta (tmpblo),y
+          
+          jsr setselch
+
           rts
 ;------------------------------------
 pxmc1on
