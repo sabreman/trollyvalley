@@ -1472,7 +1472,7 @@ pxmc1on
           ; sets selected multicolor character 
           ; pixelpair on
 
-          ; TODO: call clear bit pair subroutine first!
+          jsr pxmc1off
 
           ; the pixelpair is set at mcbitpair 
 
