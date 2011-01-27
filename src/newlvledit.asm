@@ -138,6 +138,8 @@ bgcolor2            = $d023
 
 ;------------------------------------
 mainloop
+          ; check the current raster
+          ; beam location
           lda raster
           cmp #$ff
           bne mainloop ; busy wait
@@ -380,7 +382,9 @@ mcbitpair3
           sta mcbitpair
           rts
 ;------------------------------------
-deccurch
+deccurch  ; select previous character from editable
+          ; characters
+
           ; do not decrease if minimum index reached
           lda curchind
           cmp minchind
@@ -390,6 +394,7 @@ deccurch
           dec curchind
 
           ; decrease the current character memory pointer
+          ; each character is represented by 8 bytes of data
           sec                 ; set carry
           lda tmpblo
           sbc #$08            ; reduce the pointer for 8 bytes
@@ -402,7 +407,9 @@ deccurch
 deccurchx
           rts
 ;------------------------------------
-inccurch 
+inccurch  ; select next character from editable
+          ; characters
+
           ; do not increase if maximum index reached
           lda curchind
           cmp maxchind
@@ -412,6 +419,7 @@ inccurch
           inc curchind
 
           ; increse the current character memory pointer
+          ; each character is represented by 8 bytes of data
           clc                 ; clear carry
           lda tmpblo
           adc #$08            ; increase the pointer for 8 bytes
@@ -737,24 +745,6 @@ tglchrst1 ; multi color
           lda #>chedstart
           sta tmpdhi
 
-          ; TODO replace reset cursor with this after implementing screen memory setting by cursor index:
-          ;lda #$02
-          ;sta crsrstep
-
-          ; set the cursor position divisible by 2
-          ;lda crsrx
-          ;and #$fe
-          ;sta crsrx
-
-          ;lda crsry
-          ;and #$fe
-          ;sta crsry
-
-          ; TODO: need an update function
-          ; to set screen memory pointer according
-          ; to crsrx/-y
-
-          ; show cursor
           jsr shwcrsr
           
 tglchrst2 jsr setselch
@@ -1522,6 +1512,30 @@ pxmc1on2  ; A contains the filter, set the bit pair
           
           jsr setselch
 
+          rts
+
+;------------------------------------
+tstinc    ; increment two byte value
+          ; (adapted from 'Compute's Programming the Commodore 64 - The Definitive Guide')
+
+          inc tmpalo
+          bne tstincx
+          ; needed only when low byte
+          ; overflowed (from #$ff to #$00)
+          inc tmpahi
+tstincx
+          rts
+;------------------------------------
+tstdec    ; decrement two byte value
+          ; (adapted from 'Compute's Programming the Commodore 64 - The Definitive Guide')
+
+          lda tmpalo
+          bne tstdec1
+          ; need to decrease high byte
+          ; only when low byte is #$00
+          dec tmpahi
+
+tstdec1   dec tmpalo
           rts
 ;------------------------------------
 fnchrset  .text "CHR"
