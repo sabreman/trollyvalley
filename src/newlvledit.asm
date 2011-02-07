@@ -35,7 +35,7 @@ tmpblo              = $fd
 tmpbhi              = $fe
 
 tmpclo              = $2b     ; pointer to ...
-tmpchi              = $2c     ; ... star of BASIC txt
+tmpchi              = $2c     ; ... start of BASIC txt
 
 ; tmpdlo/-hi will be used as a pointer to editor screen memory
 tmpdlo              = $37     ; pointer to highest...
@@ -92,6 +92,18 @@ chedstart           = $06c8
 
 ; store character set to basic memory
 
+; game data to be stored ... $37ff
+
+; tile data (one memory page) is stored to $2f00
+; a tile consists of 4 characters, one page of 
+; memory containes 64 tiles
+;
+; Note: if 4 pages were used, it would be very easy to
+; index the tile data, first page containes the 1st
+; character, 2nd page the 2nd character and so on.
+; An index would access the whole tile.
+tiledata            = $2f00
+
 ; character set being edited (half a set at time)
 ; character data for characters 0-127
 chrdataed1          = $3000 ;... $33ff
@@ -99,8 +111,9 @@ chrdataed1          = $3000 ;... $33ff
 chrdataed2          = $3400 ;... $37ff
 chrdataed3          = $37ff ; character data ends
 
+
 ; the standard character set is copied to $3800
-; the editor ui will use the lower half of the character 
+; the editor ui will use the lower half of the character set
 chrdata1            = $3800 ;... $3bff
 ; the half being edited from $3000-$37ff will be copied
 ; to $3c00-$3fff 
@@ -135,6 +148,9 @@ bgcolor2            = $d023
           jsr init
           jsr cpchedmem
           jsr printchs
+          jsr prntiles
+
+          ; continue to mainloop
 
 ;------------------------------------
 mainloop
@@ -956,6 +972,130 @@ printchs1
           
 printchs2 inx
           bne printchs1
+
+          rts
+
+;------------------------------------
+prntiles
+          ; Print tiles to screen
+
+          ; tiles start from 'tiledata'
+
+          ; tmpalo/hi will be used as a screen memory 
+          ; pointer
+
+          lda #<scrmemp1
+          sta tmpalo
+          sta tmpdlo
+          
+          lda #>scrmemp1
+          sta tmpahi
+          sta tmpdhi
+
+          ; add row to tmpblo/-hi
+          clc
+          lda tmpdlo
+          adc #$28
+          sta tmpdlo
+          lda tmpdhi
+          adc #$00
+          sta tmpdhi
+
+          ; atmp will be used as a row counter
+          lda #$09
+          sta atmp
+
+          ldx #$00
+          ; y is used as tiles per row counter
+          ldy #$0e ; 15
+prntiles1
+          jsr paintile
+
+          ; next tile
+          ; add 02 (two chars) to both
+          ; screen memory pointers.
+          clc 
+          lda tmpalo
+          adc #$02
+          sta tmpalo
+          lda tmpahi
+          adc #$00
+          sta tmpahi
+          clc 
+          lda tmpdlo
+          adc #$02
+          sta tmpdlo
+          lda tmpdhi
+          adc #$00
+          sta tmpdhi
+
+          inx
+          dey
+          bne prntiles1 
+          ldy #$0e
+
+          ; decrease the row counter
+          dec atmp
+          ; branch if enough rows have been printed
+          beq prntiles2
+
+          ; next row of tiles
+          ; add 52 chars (1 row + 12 chars) to both
+          ; screen memory pointers.
+          clc 
+          lda tmpalo
+          adc #$34
+          sta tmpalo
+          lda tmpahi
+          adc #$00
+          sta tmpahi
+          clc 
+          lda tmpdlo
+          adc #$34
+          sta tmpdlo
+          lda tmpdhi
+          adc #$00
+          sta tmpdhi
+          jmp prntiles1
+prntiles2
+          rts
+;------------------------------------
+paintile
+          ; paints a tile from tiledata
+          ; indexed by x-register
+
+          ; the tile offset is 4 (each tile
+          ; consists of 4 characters)
+
+          ; tmpalo/hi must contain the tile top row 
+          ; location in the screen memory
+
+          ; tmpblo/hi must containt the tile bottom 
+          ; row location in the screen memory
+          
+          ; store .Y to stack
+          tya
+          pha
+
+          ldy #$00
+          lda tiledata,x
+          ; print top row 1st char
+          sta (tmpalo),y
+          lda tiledata+2,x
+          ; print bottom row 1st char
+          sta (tmpdlo),y
+          inx
+          iny
+          lda tiledata,x
+          ; print top row 2nd char
+          sta (tmpalo),y
+          lda tiledata+2,x
+          ; print bottom row 2nd char
+          sta (tmpdlo),y
+
+          ; restore .Y from stack
+          pla
+          tay
 
           rts
 
