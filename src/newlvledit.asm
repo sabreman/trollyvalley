@@ -29,8 +29,10 @@ currkey             = $cb
 
 tmpalo              = $fb
 tmpahi              = $fc 
+
 ; tmpblo/-hi will be used as a pointer to selected character
-; in the edit character memory
+; in the edit character memory (store & restore if using 
+; for other purposes)
 tmpblo              = $fd
 tmpbhi              = $fe
 
@@ -38,6 +40,7 @@ tmpclo              = $2b     ; pointer to ...
 tmpchi              = $2c     ; ... start of BASIC txt
 
 ; tmpdlo/-hi will be used as a pointer to editor screen memory
+; (store & restore if using for other purposes)
 tmpdlo              = $37     ; pointer to highest...
 tmpdhi              = $38     ; ... address used by BASIC
 
@@ -986,20 +989,20 @@ prntiles
 
           lda #<scrmemp1
           sta tmpalo
-          sta tmpdlo
+          sta tmpclo
           
           lda #>scrmemp1
           sta tmpahi
-          sta tmpdhi
+          sta tmpchi
 
-          ; add row to tmpblo/-hi
+          ; add row to tmpclo/-hi
           clc
-          lda tmpdlo
+          lda tmpclo
           adc #$28
-          sta tmpdlo
-          lda tmpdhi
+          sta tmpclo
+          lda tmpchi
           adc #$00
-          sta tmpdhi
+          sta tmpchi
 
           ; atmp will be used as a row counter
           lda #$09
@@ -1022,12 +1025,12 @@ prntiles1
           adc #$00
           sta tmpahi
           clc 
-          lda tmpdlo
+          lda tmpclo
           adc #$02
-          sta tmpdlo
-          lda tmpdhi
+          sta tmpclo
+          lda tmpchi
           adc #$00
-          sta tmpdhi
+          sta tmpchi
 
           inx
           dey
@@ -1050,12 +1053,12 @@ prntiles1
           adc #$00
           sta tmpahi
           clc 
-          lda tmpdlo
+          lda tmpclo
           adc #$34
-          sta tmpdlo
-          lda tmpdhi
+          sta tmpclo
+          lda tmpchi
           adc #$00
-          sta tmpdhi
+          sta tmpchi
           jmp prntiles1
 prntiles2
           rts
@@ -1070,7 +1073,7 @@ paintile
           ; tmpalo/hi must contain the tile top row 
           ; location in the screen memory
 
-          ; tmpblo/hi must containt the tile bottom 
+          ; tmpclo/hi must containt the tile bottom 
           ; row location in the screen memory
           
           ; store .Y to stack
@@ -1083,7 +1086,7 @@ paintile
           sta (tmpalo),y
           lda tiledata+2,x
           ; print bottom row 1st char
-          sta (tmpdlo),y
+          sta (tmpclo),y
           inx
           iny
           lda tiledata,x
@@ -1091,7 +1094,7 @@ paintile
           sta (tmpalo),y
           lda tiledata+2,x
           ; print bottom row 2nd char
-          sta (tmpdlo),y
+          sta (tmpclo),y
 
           ; restore .Y from stack
           pla
