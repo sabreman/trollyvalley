@@ -980,12 +980,17 @@ printchs2 inx
 
 ;------------------------------------
 prntiles
-          ; Print tiles to screen
+          ; Print 4x4 character graphics tiles 
+          ; to screen
 
-          ; tiles start from 'tiledata'
+          ; tile data start from 'tiledata'
 
-          ; tmpalo/hi will be used as a screen memory 
-          ; pointer
+          ; tmpalo/hi and tmpclo/hi will be used 
+          ; as screen memory pointers.
+          ; the two top row characters will be printed
+          ; using tmpalo/hi and the two bottom row 
+          ; characters will be printed using
+          ; tmpclo/hi
 
           lda #<scrmemp1
           sta tmpalo
@@ -1005,28 +1010,28 @@ prntiles
           sta tmpchi
 
           ; atmp will be used as a row counter
-          lda #$09
+          lda #$07
           sta atmp
 
           ldx #$00
           ; y is used as tiles per row counter
-          ldy #$0e ; 15
+          ldy #$0a ; 10
 prntiles1
           jsr paintile
 
           ; next tile
-          ; add 02 (two chars) to both
+          ; add 03 (three chars) to both
           ; screen memory pointers.
           clc 
           lda tmpalo
-          adc #$02
+          adc #$03
           sta tmpalo
           lda tmpahi
           adc #$00
           sta tmpahi
           clc 
           lda tmpclo
-          adc #$02
+          adc #$03
           sta tmpclo
           lda tmpchi
           adc #$00
@@ -1035,7 +1040,7 @@ prntiles1
           inx
           dey
           bne prntiles1 
-          ldy #$0e
+          ldy #$0a
 
           ; decrease the row counter
           dec atmp
@@ -1043,18 +1048,18 @@ prntiles1
           beq prntiles2
 
           ; next row of tiles
-          ; add 52 chars (1 row + 12 chars) to both
+          ; add 90 chars (2 rows + 10 chars) to both
           ; screen memory pointers.
           clc 
           lda tmpalo
-          adc #$34
+          adc #$5a
           sta tmpalo
           lda tmpahi
           adc #$00
           sta tmpahi
           clc 
           lda tmpclo
-          adc #$34
+          adc #$5a
           sta tmpclo
           lda tmpchi
           adc #$00
