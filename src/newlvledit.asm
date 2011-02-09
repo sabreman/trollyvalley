@@ -97,15 +97,15 @@ chedstart           = $06c8
 
 ; game data to be stored ... $37ff
 
-; tile data (one memory page) is stored to $2f00
-; a tile consists of 4 characters, one page of 
-; memory containes 64 tiles
-;
-; Note: if 4 pages were used, it would be very easy to
-; index the tile data, first page containes the 1st
-; character, 2nd page the 2nd character and so on.
-; An index would access the whole tile.
-tiledata            = $2f00
+; tile data is stored from $2c00 to $2fff (4 pages of memory)
+; a tile consists of 4 characters.
+; the first character of a tile x is in tiledata1,x, 
+; 2nd character in tiledata2,x, etc.
+
+tiledata1           = $2c00   ; ... $2cff
+tiledata2           = $2d00   ; ... $2dff
+tiledata3           = $2e00   ; ... $2eff
+tiledata4           = $2f00   ; ... $2fff
 
 ; character set being edited (half a set at time)
 ; character data for characters 0-127
@@ -113,7 +113,6 @@ chrdataed1          = $3000 ;... $33ff
 ; character data for characters 128-255 
 chrdataed2          = $3400 ;... $37ff
 chrdataed3          = $37ff ; character data ends
-
 
 ; the standard character set is copied to $3800
 ; the editor ui will use the lower half of the character set
@@ -983,7 +982,7 @@ prntiles
           ; Print 4x4 character graphics tiles 
           ; to screen
 
-          ; tile data start from 'tiledata'
+          ; tile data starts from 'tiledata1'
 
           ; tmpalo/hi and tmpclo/hi will be used 
           ; as screen memory pointers.
@@ -1069,11 +1068,8 @@ prntiles2
           rts
 ;------------------------------------
 paintile
-          ; paints a tile from tiledata
+          ; paints a tile from tiledata1/2/3/4
           ; indexed by x-register
-
-          ; the tile offset is 4 (each tile
-          ; consists of 4 characters)
 
           ; tmpalo/hi must contain the tile top row 
           ; location in the screen memory
@@ -1085,20 +1081,24 @@ paintile
           tya
           pha
 
-          ldy #$00
-          lda tiledata,x
           ; print top row 1st char
+          ldy #$00
+          lda tiledata1,x
           sta (tmpalo),y
-          lda tiledata+2,x
-          ; print bottom row 1st char
-          sta (tmpclo),y
-          inx
-          iny
-          lda tiledata,x
+
           ; print top row 2nd char
+          iny
+          lda tiledata2,x
           sta (tmpalo),y
-          lda tiledata+2,x
+
+          ; print bottom row 1st char
+          ldy #$00
+          lda tiledata3,x
+          sta (tmpclo),y
+
           ; print bottom row 2nd char
+          iny
+          lda tiledata4,x
           sta (tmpclo),y
 
           ; restore .Y from stack
