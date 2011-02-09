@@ -2,7 +2,7 @@
 ; TROLLY VALLEY
 ;
 ; LICENSED UNDER GPL
-; (C) MIKKO KEINÄNEN 2004-2010
+; (C) MIKKO KEINÄNEN 2004-2011
 ;--------------------------------------
 ;------------------------------------------------
 ; To add a sprite object
