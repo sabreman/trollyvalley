@@ -149,8 +149,9 @@ bgcolor2            = $d023
           jsr clearscr
           jsr init
           jsr cpchedmem
-          jsr printchs
-          jsr prntiles
+          ;jsr printchs
+          jsr prnchrs
+          ;jsr prntiles
 
           ; continue to mainloop
 
@@ -938,6 +939,97 @@ clearscr2
           dex
           bne clearscr2
           sta scrmemp4 
+          rts
+;------------------------------------
+prnchrs
+          ; prints the characters 128-255 
+
+          ; set the start location in screen memory
+
+          lda #<scrmemp1
+          sta tmpalo
+          lda #>scrmemp1
+          sta tmpahi
+
+          ; start from character 128
+          ldx #$80  ; 128
+
+prnchrs1
+          jsr prchrrw
+
+          ; if .X is 0 all the chars have been 
+          ; printed
+          cpx #$00
+          beq prnchrsx
+
+          ; row of character is full
+          ; increment tmpalo/hi indirect
+          ; index pointer a row and print an empty row
+          jsr incrow
+          jsr emptyrw
+          jsr incrow
+          jmp prnchrs1
+
+prnchrsx
+          rts
+
+;------------------------------------
+prchrrw
+          ; prints a row of characters
+          ; (row is 30 chars in this case)
+          ; starting from value in .X
+          ; if .X overflows or 30 chars
+          ; has been printed the routine
+          ; returns
+
+          ; tmpalo/hi is used for 
+          ; indirect indexing of screen 
+          ; memory
+
+          ; after returning the .X
+          ; will contain the value of next
+          ; value to be printed
+          ; and .Y is set to 0
+
+          ldy #$00
+prchrrw1
+          txa
+          sta (tmpalo),y
+          iny
+          inx
+          beq prchrrwx
+          cpy #$1e  ; 30
+          bne prchrrw1
+
+prchrrwx
+          ldy #$00
+          rts
+;------------------------------------
+emptyrw
+          ; prints a row of empty
+          ; characters
+          ; (row is 30 chars in this case)
+          ldy #$00
+emptyrw1
+          lda #$20  ; empty space
+          sta (tmpalo),y
+          iny
+          cpy #$1e  ; 30 chars row here
+          bne emptyrw1 
+          rts
+;------------------------------------
+incrow
+          ; tmpalo/hi points to screen
+          ; memory
+          ; increase tmpalo/hi by 
+          ; one row (40 chars)
+          clc
+          lda tmpalo
+          adc #$28
+          sta tmpalo
+          lda tmpahi
+          adc #$00
+          sta tmpahi
           rts
 ;------------------------------------
 printchs
