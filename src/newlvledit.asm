@@ -152,6 +152,7 @@ bgcolor2            = $d023
           ;jsr printchs
           jsr prnchrs
           ;jsr prntiles
+          jsr setselch
 
           ; continue to mainloop
 
@@ -452,9 +453,66 @@ inccurchx
           rts
 ;------------------------------------
 setselch
-          ; prints selected character to screen 1:1
-          ; and magnified to 8:1 (a character presents
+          ; points selected character in the character list 
+          ; and renders magnified to 8:1 (a character presents
           ; each bit in character data)
+
+          ; point the selected charcter in the character list
+          ; 30 chars are currently printed per row
+          ; curchind contains the selected character
+          ; curchind minimum value is minchind
+          ; and maximum value is maxchind
+
+          ; will subtract minchind from curchind to point to 
+          ; the first character in the list
+
+          lda #<scrmemp1
+          sta tmpalo
+          lda #>scrmemp1
+          sta tmpahi
+
+          ; add row to tmpalo/hi
+          clc
+          lda tmpalo
+          adc #$28
+          sta tmpalo
+          lda tmpahi
+          adc #$00
+          sta tmpahi
+
+          sec
+          lda curchind
+          sbc minchind
+          tay
+          ; Note: it is an error if c flag is cleared
+setselch0a
+          cpy #$1e
+          bcc setselch0b ; < 30
+
+          jsr emptyrw
+
+          ; add two rows to tmpalo/hi
+          clc
+          lda tmpalo
+          adc #$50
+          sta tmpalo
+          lda tmpahi
+          adc #$00
+          sta tmpahi
+
+          tya
+          sbc #$1d  ; 30
+          tay
+          cpy #$00 ; is this row needed?
+          bne setselch0a
+          inc $d020
+
+setselch0b
+          jsr emptyrw
+          ; store .A to .Y
+          tay
+          lda #$00  ;@ sign
+          sta (tmpalo),y
 
           ; print selected character to screen
           lda curchind
@@ -616,7 +674,7 @@ rendbyte1
           jmp rendbyte3
 
 rendbyte2 
-          lda curchind; #$04
+          lda curchind
 
 rendbyte3 
           sta (tmpalo),y      ; store empty or mark to char editor screen mem
@@ -1009,6 +1067,12 @@ emptyrw
           ; prints a row of empty
           ; characters
           ; (row is 30 chars in this case)
+          ; starting from memory indexed indirectly using tmpalo/hi
+
+          ; store .Y to stack
+          tya
+          pha
+
           ldy #$00
 emptyrw1
           lda #$20  ; empty space
@@ -1016,6 +1080,11 @@ emptyrw1
           iny
           cpy #$1e  ; 30 chars row here
           bne emptyrw1 
+
+          ; restore .Y from stack
+          pla
+          tay
+
           rts
 ;------------------------------------
 incrow
