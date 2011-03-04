@@ -451,17 +451,29 @@ inccurch  ; select next character from editable
           jsr setselch
 inccurchx
           rts
+
+;------------------------------------
+clrselch
+          ; clears the selected character marker
+          ; and the character editor
+          rts
 ;------------------------------------
 setselch
-          ; points selected character in the character list 
-          ; and renders magnified to 8:1 (a character presents
-          ; each bit in character data)
+          ; Points out the selected character in the
+          ; character list and render selected character
+          ; to the character editor.
+          jsr selchcr
+          jsr chredit
+          rts
+;------------------------------------
+selchcr
+          ; Point out the selected character in the character list by
+          ; printing a mark under the selected character.
 
-          ; point the selected charcter in the character list
-          ; 30 chars are currently printed per row
-          ; curchind contains the selected character
-          ; curchind minimum value is minchind
-          ; and maximum value is maxchind
+          ; 30 chars are currently printed per row.
+          ; - curchind contains the selected character
+          ; - curchind minimum value is minchind
+          ;   and maximum value is maxchind
 
           ; will subtract minchind from curchind to point to 
           ; the first character in the list
@@ -508,12 +520,19 @@ setselch0a
           inc $d020
 
 setselch0b
+          ; now we are on the correct row
           jsr emptyrw
           ; store .A to .Y
           tay
           lda #$00  ;@ sign
           sta (tmpalo),y
 
+          rts
+;------------------------------------
+
+chredit
+          ; Renders character magnified 
+          ; to 8:1 (a character presents each bit in character data)
           ; print selected character to screen
           lda curchind
           sta scrcurch 
