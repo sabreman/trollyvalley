@@ -2,6 +2,20 @@
 ; (C) Mikko Keinänen 2011
 ; 
 ; Instructions
+; 
+; Main menu keys
+; 1       : load data
+; 2       : save data
+; 3       : character editor
+; 4       : tile editor
+; 5       : screen map editor
+; 6       : sprite editor
+; 7       : sprite object creator
+; 8       : sprite object locater
+; 9       : collectible locater
+; 0       : 
+; 
+;
 ; Character editor keys:
 ; 1       : toggle multicolor / normal
 ; 2       : increase background color 0
@@ -49,7 +63,7 @@ ctmp                = $02a8
 
 ; bit 0:  0 first 1k of charset being edited
 ;         1 second 1k of charset being edited
-prgstate            = $02a9
+editstate            = $02a9
 
 ; current pixel in chr editor area
 currpx              = $02aa
@@ -64,9 +78,20 @@ crsrmay             = $02b0
 crsrstep            = $02b1
 ; selected multicolor bit pair mode
 mcbitpair           = $02b2
+; program state
+; 00000000 main menu
+; 00000001 character editor
+; 00000010 tile editor
+; 00000100 screen map editor
+; 00001000 character property selector (collectible, floor, ladder, etc.)
+; 00010000 sprite editor
+; 00100000 sprite object animator
+; 01000000 setting sprite objects to rooms
+; 10000000 setting collectible objects to rooms
+prgstate = $02b3
 
 ; free memory:
-; $02b2-$02ff
+; $02b4-$02ff
 ; $0313
 ; $0337-$033b
 
@@ -138,6 +163,111 @@ bgcolor0            = $d021
 bgcolor1            = $d022
 ; background color #2 
 bgcolor2            = $d023
+;------------------------------------
+; list of functions with short
+; short descriptions 
+;------------------------------------
+; mainloop
+; init
+; initstate
+;   initializes the current program state
+; mainmenu
+;   renders the main menu
+; readk
+;   read keyboard input
+; readka
+; readkb
+; readnumk
+;   read keyboard input (numeric keys)
+; incbgc0
+;   increase background color 0
+; incbgc1
+;   increase background color 1
+; incbgc2
+;   increase background color 2
+; mcbitpair0
+;   set multicolor bitpair 00 mode in character editor (and possibly sprite editor?)
+; mcbitpair1
+;   set multicolor bitpair 01 mode in character editor (and possibly sprite editor?)
+; mcbitpair2
+;   set multicolor bitpair 10 mode in character editor (and possibly sprite editor?)
+; mcbitpair3
+;   set multicolor bitpair 11 mode in character editor (and possibly sprite editor?)
+; deccurch
+;   select previous character from editable characters
+; inccurch
+;   select next character from editable characters
+; setselch
+;   calls selchcr and chredit
+; selchcr  
+;   Point out the selected character in the character list
+; chredit
+;   Renders character magnified to 8:1
+; rstcrsr
+;   restore the previous state of cursor
+; shwcrsr
+;   show cursor
+; rendbyte
+;   renders a byte (bit by bit) from right to left
+;   to given position in screen memory
+; rendbytm
+;   render a multicolor character byte from right to left
+;   to given position in screen memory
+; tglchrst
+;   toggle character mode (standard / multicolor)
+; ldchrset
+;   load the character set from disk
+; svchrset
+;   Save character set to disk
+; initchrset
+;   Initialize character set
+; clearscr 
+;   fill screen memory with empty space characters
+; prnchrs
+;   prints the characters 128-255
+; printchs
+;   prints the characters 128-255 (what's the difference between prnchrs and this?)
+; prchrrw
+;   prints a row of characters
+; incrow
+;   increase row in screen memory
+; prntiles
+;   Print 4x4 character graphics tiles to screen
+; paintile
+;   renders a single tile
+; tgchedmem
+;   toggle the character memory half being
+; mvchredmem
+;   copies 1k of character memory being edited to/from edit memory bank
+; cpchedmem
+;   copies the half of character set being edited from chrdadaed1/2 to chrdata2
+; stchedmem
+;   stores the half of character set being edited from chrdata2 to chrdadaed1/2
+; dmpstdch
+;   dumps standard character set from character generator ROM to RAM
+; chm2colm
+;   sets pointer to color memory
+; mvlft
+;   move editor cursor to left
+; mvrgt
+;   move editor cursor right
+; mvup
+;   move editor cursor up
+; mvdown
+;   move editor cursor down
+; px1off
+;   sets selected character pixel off
+; px1on
+;   sets selected character pixel on
+; pxmc1off
+;   sets selected multicolor character pixelpair off
+; pxmc1on
+;   sets selected multicolor character pixelpair on
+; tstinc
+;   increment two byte value
+; tstdec
+;   decrement two byte value 
+;------------------------------------
 
           ; sys 32768
           *= $8000 
@@ -149,10 +279,11 @@ bgcolor2            = $d023
           jsr clearscr
           jsr init
           jsr cpchedmem
+          jsr initstate
           ;jsr printchs
-          jsr prnchrs
+          ;jsr prnchrs
           ;jsr prntiles
-          jsr setselch
+          ;jsr setselch
 
           ; continue to mainloop
 
@@ -169,7 +300,8 @@ mainloop
 ;------------------------------------
 init
           lda #$00
-          sta prgstate
+          sta editstate
+          sta prgstate        ; initial program state is main menu 
           sta currpx
           sta crsrx
           sta crsry
@@ -205,6 +337,51 @@ init
 
           ; set the cursor position
 
+          rts
+
+;------------------------------------
+; initialize the current program state
+;------------------------------------
+initstate 
+;------------------------------------
+
+          lda prgstate
+          bne initstate_chedit
+
+          jsr mainmenu
+          rts
+
+initstate_chedit
+
+          clc
+          ror
+          bcc initstate_tile
+
+          ; initialize character editor
+
+          rts
+
+initstate_tile
+
+          ror
+          bcc initstate_screenmap
+
+          ; initialize tile editor 
+          
+          rts
+
+initstate_screenmap
+
+          ror
+          ; bcc ...
+          ; TODO
+          ; rest of the states
+
+          rts
+;------------------------------------
+; render main menu
+;------------------------------------
+mainmenu
           rts
 ;------------------------------------
 readk
@@ -1291,9 +1468,9 @@ paintile
 tgchedmem ; toggle the character memory half being
           ; edited to edit memory buffer
           jsr stchedmem
-          lda prgstate
+          lda editstate
           eor #$01
-          sta prgstate
+          sta editstate
           jsr cpchedmem
           jsr setselch
           rts
@@ -1339,7 +1516,7 @@ cpchedmem
 
           ; check the program state, which half are
           ; we editing
-          lda prgstate
+          lda editstate
           lsr       ; check the bit 0 
           bcs cpchedmem1 
           ; set pointer to memory for characters 0-127
@@ -1391,7 +1568,7 @@ stchedmem
 
           ; check the program state, which half are
           ; we editing
-          lda prgstate
+          lda editstate
           lsr       ; check the bit 0 
           bcs stchedmem1 
           ; set pointer to memory for characters 0-127
