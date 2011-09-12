@@ -90,8 +90,23 @@ mcbitpair           = $02b2
 ; 10000000 setting collectible objects to rooms
 prgstate = $02b3
 
+; selected text colour in print subroutines 
+; other uses allowed when not rendering text
+strcol   = $02b4
+
+; message column width
+; other uses allowed when not rendering text
+columnwidth = $02b5
+
+; temporary counter in print routine
+; other uses allowed when not rendering text
+tmpcnt = $02b6 
+
+; an all purpose tmp variable
+tmp    = $02b7
+
 ; free memory:
-; $02b4-$02ff
+; $02b8-$02ff
 ; $0313
 ; $0337-$033b
 
@@ -263,6 +278,10 @@ bgcolor2            = $d023
 ;   sets selected multicolor character pixelpair off
 ; pxmc1on
 ;   sets selected multicolor character pixelpair on
+; print
+;   prints messages to screen
+; printstr
+;   prints string to screen
 ; tstinc
 ;   increment two byte value
 ; tstdec
@@ -382,6 +401,10 @@ initstate_screenmap
 ; render main menu
 ;------------------------------------
 mainmenu
+          jsr clearscr
+          ldx #<txtmenu
+          ldy #>txtmenu
+          jsr print
           rts
 ;------------------------------------
 readk
@@ -1664,6 +1687,10 @@ chm2colm
           ; tmpalo/-hi must contain
           ; location in screen memory.
 
+          ; note this routine is same as in main game source GETCOLM
+          ; TODO: separate common subroutines to one source file
+          ;       and unify the variable names
+
           ; Color memory pointer is set to
           ; zero page adresses tmpclo/-hi.
           
@@ -1677,8 +1704,8 @@ chm2colm
 
           ; load screen memory pointer low byte 
           ; and store to color memory pointer low byte
-          lda tmpalo          
-          sta tmpclo 
+          lda tmpalo ; same as SCRLO in game         
+          sta tmpclo ; same as LOTMP in game 
 
           ; load screen memory pointer high byte
           ; add #$d4 to it and store to color memory
@@ -1690,17 +1717,17 @@ chm2colm
           ; using carry would be needed:
 
           ; clc ; clear carry
-          ; lda tmpalo
+          ; lda tmpalo        ; scrlo in game
           ; adc somevalue ; add with carry
-          ; sta tmpalo
-          ; lda tmpahi
+          ; sta tmpclo        ; lotmp in game
+          ; lda tmpahi        ; scrhi in game
           ; adc anothervalue ; add with carry
-          ; sta tmpahi
+          ; sta tmpchi        ; hitmp in game
 
           clc
-          lda tmpahi 
+          lda tmpahi ; same as SCRHI in game
           adc #$d4
-          sta tmpchi 
+          sta tmpchi ; same as HITMP in game 
           rts
 ;------------------------------------
 mvlft     
@@ -2030,6 +2057,136 @@ tstinc    ; increment two byte value
           inc tmpahi
 tstincx
           rts
+
+;--------------------------------------
+; initializes string messages
+; and prints string messages to screen
+; using printstr subroutine
+;
+; note this routine is mostly same as in main game source 
+; TODO: separate common subroutines to one source file
+;       and unify the variable names
+;
+; X, Y must contain the start adress
+; of string data - 
+; X low order, Y high order byte.
+;
+; the string data _must_ be in the following format:
+; 1st byte : screen mem. location low order byte
+; 2nd byte : screen mem. location high order byte
+; 3rd byte : colour
+; 4th byte : width of the message column
+; Xth byte : string data
+; $00      : end sign
+; NOTE: A String cannot be more than 255 bytes long!
+;------------------------------------
+print
+        ; point tmpclo/-hi to string data
+        stx tmpdlo ; LVCHLO in game
+        sty tmpdhi ; LVCHI in game
+
+        ; read the screen memory location
+        ; for the string to tmpalo/hi
+        ldy #$00
+        lda (tmpdlo),y ; lvchlo in game
+        sta tmpalo ; scrlo in game
+        iny
+        lda (tmpdlo),y ; lvchlo in game
+        sta tmpahi ; scrhi in game
+        ; read message colour to strcol
+        iny
+        lda (tmpdlo),y ; lvchlo in game
+        sta strcol
+        ; read width of the message column
+        ; to columnwidth
+        iny
+        lda (tmpdlo),y ; lvchlo in game
+        sta columnwidth ; MSGCOLWIDTH in game
+
+        ; set tmpclo/hi to the start of actual
+        ; string data -> add 4 to tmpclo/hi
+        clc
+        lda tmpdlo  ; lvchlo in game
+        adc #$04
+        sta tmpdlo  ; lvchlo in game
+        lda tmpdhi  ; lvchi in game
+        adc #$00
+        sta tmpdhi  ; lvchi in game
+        jsr printstr
+        rts
+
+;-------------------------------------
+; tmpchi/lo must contain the string character data.
+; $00 is the end sign for a string.
+
+; note this routine is mostly same as in main game source 
+; TODO: separate common subroutines to one source file
+;       and unify the variable names
+
+; columnwidth must contain the width of the message column 
+; strcol must contain the string colour
+; tmpdlo/hi must contain the start location in screen memory
+; NOTE: A String cannot be more than 255 bytes long!
+;-------------------------------------
+printstr
+
+        ; set index counter y-reg to 0        
+        ldy #$00
+        ; tmpcnt is a width counter
+        lda #$00
+        sta tmpcnt
+        
+         ;read screen colour memory pointer values to tmpclo/-hi
+         jsr chm2colm ; JSR GETCOLM in game
+
+        ; now finally read the actual string
+        ; until $00 occurs
+        ; or y goes to zero again (too long string)
+        
+printstrloop
+        lda (tmpdlo),y ; lvchlo in game
+        beq printstrx ; end sign $00 occured
+        ;cmp #$ff      ; end of line char
+        ;beq printstr_nl 
+        sty tmp
+        ldy tmpcnt
+        ; set char to screen
+        sta (tmpalo),y ; scrlo in game
+        ; set right colour to colour memory of screen location
+        lda strcol
+        sta (tmpclo),y ; lotmp in game
+        ldy tmp
+        iny
+        beq printstrx ; y went over to 0 (too long string)
+        inc tmpcnt
+        lda tmpcnt 
+        cmp columnwidth 
+        ; has column widht already reached
+        bne printstrloop      ; continue to next char
+        ; column width has been reached
+printstr_nl                   ; new line
+        lda #$00
+        sta tmpcnt
+        ; add a row 
+        ; (40 chars) to screen 
+        ; and colour memory pointer
+        clc
+        lda tmpalo  ; scrlo in game
+        adc #$28 ; add a row
+        sta tmpalo  ; scrlo in game
+        lda tmpahi  ; scrhi in game
+        adc #$00
+        sta tmpahi  ; scrhi in game
+        clc
+        lda tmpclo  ; lotmp in game
+        adc #$28
+        sta tmpclo  ; lotmp in game
+        lda tmpchi  ; hitmp in game
+        adc #$00
+        sta tmpchi  ; hitmp in game
+        jmp printstrloop
+printstrx
+        rts
 ;------------------------------------
 tstdec    ; decrement two byte value
           ; (adapted from 'Compute's Programming the Commodore 64 - The Definitive Guide')
@@ -2045,3 +2202,24 @@ tstdec1   dec tmpalo
 ;------------------------------------
 fnchrset  .text "CHR"
 fnchrssv  .text "@0:CHR"
+
+;------------------------------------
+; text format
+;------------------------------------
+; byte 01: screen location low order byte
+; byte 02: screen location high order byte
+; byte 03: text colour
+; byte 04: text column width 
+; byte 05...ff text content
+; $ff    : end of line (if smaller than column width)
+; $00    : end of text block
+;------------------------------------
+txtmenu   .byte $01,$04,$04,$05
+          .enc screen
+          .text " CHAR"
+          .text " TILE"
+          .text " ROOM"
+          .enc none
+          .byte $00
+;------------------------------------
+          
