@@ -82,7 +82,7 @@ mcbitpair           = $02b2
 ; 00000000 main menu
 ; 00000001 character editor
 ; 00000010 tile editor
-; 00000100 screen map editor
+; 00000101 screen map editor
 ; 00001000 character property selector (collectible, floor, ladder, etc.)
 ; 00010000 sprite editor
 ; 00100000 sprite object animator
@@ -292,18 +292,8 @@ bgcolor2            = $d023
           *= $8000 
 ; initializing:
 
-          ;jsr ldchrset 
-          jsr dmpstdch
-          jsr initchrset
-          jsr clearscr
           jsr init
-          jsr cpchedmem
-          jsr initstate
-          ;jsr printchs
-          ;jsr prnchrs
-          ;jsr prntiles
-          ;jsr setselch
-
+          
           ; continue to mainloop
 
 ;------------------------------------
@@ -318,44 +308,13 @@ mainloop
           jmp mainloop 
 ;------------------------------------
 init
+          jsr dmpstdch
+          jsr initchrset
+          ;jsr ldchrset 
           lda #$00
-          sta editstate
           sta prgstate        ; initial program state is main menu 
-          sta currpx
-          sta crsrx
-          sta crsry
-          sta mcbitpair
-          lda #$07
-          sta crsrmax
-          sta crsrmay
-          lda #$01
-          sta crsrstep
-
-          ; Set the index of current character
-          ; and minimum / maximum character index
-          lda #$80
-          sta curchind
-          sta minchind
-          lda #$ff
-          sta maxchind
-
-          ; set the pointer to current character
-          ; in the character memory top half
-          ; where character being edited are loeaded to
-          lda #<chrdata2
-          sta tmpblo 
-          lda #>chrdata2
-          sta tmpbhi
-
-          ; set the pointer to current pixel
-          ; in the editor area
-          lda #<chedstart
-          sta tmpdlo
-          lda #>chedstart
-          sta tmpdhi
-
-          ; set the cursor position
-
+          jsr cpchedmem
+          jsr initstate
           rts
 
 ;------------------------------------
@@ -367,6 +326,7 @@ initstate
           lda prgstate
           bne initstate_chedit
 
+          ; initialize main menu
           jsr mainmenu
           rts
 
@@ -407,6 +367,70 @@ mainmenu
           jsr print
           rts
 ;------------------------------------
+inichared
+          ; set the program state to character editor
+          lda #$01
+          sta prgstate
+          lda #$00
+          sta editstate
+          sta currpx
+          sta crsrx
+          sta crsry
+          sta mcbitpair
+          lda #$07
+          sta crsrmax
+          sta crsrmay
+          lda #$01
+          sta crsrstep
+
+          ; Set the index of current character
+          ; and minimum / maximum character index
+          lda #$80
+          sta curchind
+          sta minchind
+          lda #$ff
+          sta maxchind
+
+          ; set the pointer to current character
+          ; in the character memory top half
+          ; where character being edited are loeaded to
+          lda #<chrdata2
+          sta tmpblo 
+          lda #>chrdata2
+          sta tmpbhi
+
+          ; set the pointer to current pixel
+          ; in the editor area
+          lda #<chedstart
+          sta tmpdlo
+          lda #>chedstart
+          sta tmpdhi
+
+          ; dump character set from rom
+          ;jsr dmpstdch
+
+          jsr clearscr
+          jsr cpchedmem
+          jsr printchs
+          jsr prnchrs
+          jsr setselch
+
+          rts
+;------------------------------------
+initileed
+          ;jsr prntiles
+          rts
+;------------------------------------
+iniroomed
+          rts
+;------------------------------------
+savedata
+          rts
+;------------------------------------
+loaddata
+          jsr ldchrset 
+          rts
+;------------------------------------
 readk
           lda currkey 
 
@@ -414,14 +438,24 @@ readk
           cmp #$40
           beq readkx
 
+          ; check program state
+          lda prgstate
+          bne readk_editors
+
+          ; read main menu keys
+          jsr readkmain
+          rts
+
+readk_editors
+          jsr readnumk
           jsr readka
           jsr readkb
-          jsr readnumk
 readkx 
           rts
 ;------------------------------------
 
 readka
+          lda currkey
 
           ; f1 key : load
           cmp #$04
@@ -507,10 +541,48 @@ readkbb   ; B (set single color pixel off)
 readkax    rts
 
 ;------------------------------------
+readkmain
+          lda currkey
+
+          ; key 1
+          cmp #$38
+          bne readkmain_2
+          jsr loaddata 
+          jmp readkmain_x
+
+readkmain_2         ; key 2
+          cmp #$3b
+          bne readkmain_3
+          jsr savedata 
+          jmp readkmain_x
+
+readkmain_3         ; key 3 
+          cmp #$08
+          bne readkmain_4
+          jsr inichared 
+          jmp readkmain_x
+
+readkmain_4         ; key 4 
+          cmp #$0b
+          bne readkmain_5
+          jsr initileed
+          jmp readkmain_x
+
+readkmain_5         ; key 5 
+
+          cmp #$10
+          bne readkmain_x
+          jsr iniroomed 
+
+readkmain_x
+          rts
+;------------------------------------
 readkb
+          lda currkey
           rts
 ;------------------------------------
 readnumk
+          lda currkey
           ; key 1
           cmp #$38
           bne readk2
@@ -1046,6 +1118,8 @@ tglchrst1 ; multi color
 tglchrst2 jsr setselch
           rts
 ;------------------------------------
+; load character set from disk
+;------------------------------------
 ldchrset
           ; call SETLFS (Set up a logical file) 
           ; kernal routine (similar to OPEN command in BASIC)
@@ -1086,12 +1160,8 @@ ldchrset
           ldx #<chrdataed1      ; load address (low-byte)
           ldy #>chrdataed1      ; load address (hi-byte)
           jsr $ffd5           ; LOAD routine
-          
-          jsr cpchedmem
-          jsr setselch
 
           rts
-
 ;------------------------------------
 svchrset  ; Save character set to disk.
 
@@ -2182,7 +2252,7 @@ printstr_nl                   ; new line
         adc #$28
         sta tmpclo  ; lotmp in game
         lda tmpchi  ; hitmp in game
-        adc #$00
+        adc #$00 
         sta tmpchi  ; hitmp in game
         jmp printstrloop
 printstrx
@@ -2214,11 +2284,14 @@ fnchrssv  .text "@0:CHR"
 ; $ff    : end of line (if smaller than column width)
 ; $00    : end of text block
 ;------------------------------------
-txtmenu   .byte $01,$04,$04,$05
+txtmenu   .byte $01,$04,$04,$15
           .enc screen
-          .text " CHAR"
-          .text " TILE"
-          .text " ROOM"
+          .text " TROLLY VALLEY EDITOR"
+          .text " 1 LOAD DATA         "
+          .text " 2 SAVE DATA         "
+          .text " 3 EDIT CHARACTER SET"
+          .text " 4 EDIT TILE SET     "
+          .text " 5 EDIT ROOM MAPS    "
           .enc none
           .byte $00
 ;------------------------------------
