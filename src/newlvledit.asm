@@ -2,6 +2,8 @@
 ; (C) Mikko Keinänen 2011
 ; 
 ; Instructions
+;
+; CLR/HOME: Return to main menu
 ; 
 ; Main menu keys
 ; 1       : load data
@@ -122,6 +124,11 @@ scrmemp1            = $0400
 scrmemp2            = $0500
 scrmemp3            = $0600
 scrmemp4            = $0700
+
+colmemp1            = $d800
+colmemp2            = $d900
+colmemp3            = $da00
+colmemp4            = $db00
 
 scrmemitms          = $041e
 
@@ -361,7 +368,11 @@ initstate_screenmap
 ; render main menu
 ;------------------------------------
 mainmenu
+          lda #$00
+          sta prgstate
           jsr clearscr
+          lda #$10
+          jsr setcolmem 
           ldx #<txtmenu
           ldy #>txtmenu
           jsr print
@@ -393,7 +404,7 @@ inichared
 
           ; set the pointer to current character
           ; in the character memory top half
-          ; where character being edited are loeaded to
+          ; where character being edited are loaded to
           lda #<chrdata2
           sta tmpblo 
           lda #>chrdata2
@@ -410,6 +421,9 @@ inichared
           ;jsr dmpstdch
 
           jsr clearscr
+          ; set the colour memory
+          lda #$09
+          jsr setcolmem
           jsr cpchedmem
           jsr printchs
           jsr prnchrs
@@ -438,6 +452,11 @@ readk
           cmp #$40
           beq readkx
 
+          cmp #$33  ; clr/home key
+          bne readk_state
+          jsr mainmenu
+          rts
+readk_state
           ; check program state
           lda prgstate
           bne readk_editors
@@ -1265,6 +1284,8 @@ initchrset
          rts
 
 ;------------------------------------
+; fills the screen memory with space character
+;------------------------------------
 clearscr  
           ; fill screen memory with
           ; empty space characters
@@ -1288,6 +1309,38 @@ clearscr2
           sta scrmemp4 
           rts
 ;------------------------------------
+; sets the colour memory
+; input: accu contains the colour value
+;------------------------------------
+setcolmem
+          ; fill color memory with
+          ; given colour code
+          ; NOTE: if the value in colour memory is
+          ; from 0 to 7 the corresponding space on screen
+          ; will be rendered in hi-res in the chosen colour.
+          ; if the colour is from 8 to 15 that space will
+          ; be displayed in multi-color mode.
+          ; see pg. 115 in C64 Programmer's Reference Guide
+
+          ldx #$00
+setcolmem_1
+          ; screen memory starts from $0400
+          sta colmemp1,x         
+          sta colmemp2,x
+          sta colmemp3,x
+          dex
+          bne setcolmem_1 
+
+          ; set the rest of the colour memory until $dbe7
+          ldx #$e7
+setcolmem_2
+          sta colmemp4,x
+          dex
+          bne setcolmem_2 
+          sta scrmemp4 
+          rts
+;------------------------------------
+
 prnchrs
           ; prints the characters 128-255 
 
