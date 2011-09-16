@@ -323,6 +323,11 @@ init
           jsr cpchedmem
           jsr initstate
           rts
+;------------------------------------
+infiniloop
+	inc $d020
+	jmp infiniloop
+	rts
 
 ;------------------------------------
 ; initialize the current program state
@@ -1290,7 +1295,7 @@ clearscr
           ; fill screen memory with
           ; empty space characters
 
-          lda #$20            ; empty space character
+          lda #$20 ; empty space character
           ldx #$00
 clearscr1
           ; screen memory starts from $0400
@@ -1324,7 +1329,7 @@ setcolmem
 
           ldx #$00
 setcolmem_1
-          ; screen memory starts from $0400
+          ; color memory starts from $d800
           sta colmemp1,x         
           sta colmemp2,x
           sta colmemp3,x
@@ -1337,7 +1342,7 @@ setcolmem_2
           sta colmemp4,x
           dex
           bne setcolmem_2 
-          sta scrmemp4 
+          sta colmemp4 
           rts
 ;------------------------------------
 
