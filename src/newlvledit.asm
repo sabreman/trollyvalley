@@ -437,8 +437,13 @@ inichared
           rts
 ;------------------------------------
 initileed
-          ;jsr prntiles
-          rts
+	; set the program state to tile editor
+	lda #$02
+	sta prgstate
+	jsr setcolmem
+	jsr clearscr
+        jsr prntiles
+        rts
 ;------------------------------------
 iniroomed
           rts
