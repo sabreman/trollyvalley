@@ -443,6 +443,7 @@ initileed
 	jsr setcolmem
 	jsr clearscr
         jsr prntiles
+	jsr printchs
         rts
 ;------------------------------------
 iniroomed
