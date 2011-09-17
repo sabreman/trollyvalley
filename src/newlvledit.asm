@@ -3,7 +3,6 @@
 ; 
 ; Instructions
 ;
-; CLR/HOME: Return to main menu
 ; 
 ; Main menu keys
 ; 1       : load data
@@ -16,8 +15,23 @@
 ; 8       : sprite object locater
 ; 9       : collectible locater
 ; 0       : 
+
+; Common keys for all program states
+; CLR/HOME: Return to main menu
+
+; Common keys in character editor and tile editor
+; Q       : toggle charset half being used for editing
+; O       : select previous character used for editing
+; P       : select next character used for editing
 ; 
-;
+; Z       : move editor cursor left
+; X       : move editor cursor right
+; K       : move editor cursor up
+; M       : move editor cursor down
+
+; F1      : load from disk
+; F2      : save to disk
+
 ; Character editor keys:
 ; 1       : toggle multicolor / normal
 ; 2       : increase background color 0
@@ -27,17 +41,17 @@
 ; 6       : select multi color pixel type (01)
 ; 7       : select multi color pixel type (10)
 ; 8       : select multi color pixel type (11)
-; O       : select previous character for editing
-; P       : select next character for editing
-; Q       : toggle charset half being edited
-; Z       : move editor cursor left
-; X       : move editor cursor right
-; K       : move editor cursor up
-; M       : move editor cursor down
 ; N       : set pixel on
 ; B       : set pixel off
-; F1      : load charset from disk
-; F2      : save charset to disk
+
+; Tile editor keys
+; U	  : select previous tile used for editing
+; I       : select next tile used for editing
+; Next / previous batch of tiles is presented when last / first tile
+; in screen is passed. When last / first batch of tiles is passed
+; the first / last set of tiles is presented.
+; N	  : set selected character to a current location in a tile being edited
+
 
 atmp                = $02
 ; currently pressed keycode is stored to $00cb
@@ -80,6 +94,7 @@ crsrmay             = $02b0
 crsrstep            = $02b1
 ; selected multicolor bit pair mode
 mcbitpair           = $02b2
+
 ; program state
 ; 00000000 main menu
 ; 00000001 character editor
@@ -144,10 +159,11 @@ chedstart           = $06c8
 
 ; game data to be stored ... $37ff
 
-; tile data is stored from $2c00 to $2fff (4 pages of memory)
-; a tile consists of 4 characters.
-; the first character of a tile x is in tiledata1,x, 
+; Tile data is stored from $2c00 to $2fff (4 pages of memory)
+; Each tile consists of 4 characters (2 x 2).
+; The first character of a tile x is in tiledata1,x, 
 ; 2nd character in tiledata2,x, etc.
+; This means that we have 255 tiles.
 
 tiledata1           = $2c00   ; ... $2cff
 tiledata2           = $2d00   ; ... $2dff
@@ -430,7 +446,7 @@ inichared
           lda #$09
           jsr setcolmem
           jsr cpchedmem
-          jsr printchs
+          ;jsr printchs
           jsr prnchrs
           jsr setselch
 
@@ -1453,6 +1469,9 @@ incrow
           adc #$00
           sta tmpahi
           rts
+;------------------------------------
+; prints the character set being used
+; to the right side of screen
 ;------------------------------------
 printchs
           ; prints the characters 128-255 
