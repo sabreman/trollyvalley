@@ -122,8 +122,11 @@ tmpcnt = $02b6
 ; an all purpose tmp variable
 tmp    = $02b7
 
+; a program step counter 0..255
+pscount = $02b8
+
 ; free memory:
-; $02b8-$02ff
+; $02b9-$02ff
 ; $0313
 ; $0337-$033b
 
@@ -264,7 +267,7 @@ bgcolor2            = $d023
 ; prnchrs
 ;   prints the characters 128-255
 ; printchs
-;   prints the characters 128-255 (what's the difference between prnchrs and this?)
+;   prints the characters 128-255 to the right side of screen
 ; prchrrw
 ;   prints a row of characters
 ; incrow
@@ -327,6 +330,8 @@ mainloop
           cmp #$ff
           bne mainloop ; busy wait
           
+	  inc pscount
+	  jsr cursor 
           jsr readk
           jmp mainloop 
 ;------------------------------------
@@ -343,6 +348,23 @@ init
 infiniloop
 	inc $d020
 	jmp infiniloop
+	rts
+
+;------------------------------------
+; blink the character selector cursor
+;------------------------------------
+cursor
+	; TODO: 
+	; if program state is char ed or tile ed
+	; blink the character selector cursor
+	; if pscount is odd set the selected character value (from variable)
+	; if pscount is even set a cursor character. 
+
+	; after this remove the previous fake cursor/pointer and 
+	; print whole rows of chars without empty rows between
+
+	lda pscount
+	ror ; if rightmost bit is 1 the value is odd, otherwise even
 	rts
 
 ;------------------------------------
@@ -451,6 +473,9 @@ inichared
           jsr setselch
 
           rts
+
+;------------------------------------
+; initialize the tile editor screen
 ;------------------------------------
 initileed
 	; set the program state to tile editor
@@ -461,6 +486,7 @@ initileed
         jsr prntiles
 	jsr printchs
         rts
+
 ;------------------------------------
 iniroomed
           rts
@@ -1366,11 +1392,11 @@ setcolmem_2
           bne setcolmem_2 
           sta colmemp4 
           rts
+
 ;------------------------------------
-
+; prints the characters 128-255 
+;------------------------------------
 prnchrs
-          ; prints the characters 128-255 
-
           ; set the start location in screen memory
 
           lda #<scrmemp1
@@ -1511,10 +1537,10 @@ printchs2 inx
           rts
 
 ;------------------------------------
+; Print 4x4 character graphics tiles 
+; to screen
+;------------------------------------
 prntiles
-          ; Print 4x4 character graphics tiles 
-          ; to screen
-
           ; tile data starts from 'tiledata1'
 
           ; tmpalo/hi and tmpclo/hi will be used 
