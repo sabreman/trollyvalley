@@ -133,9 +133,12 @@ pscount = $02b8
 ; $03fc-$03ff
 ; $c000-$cfff
 
-; index of selected character
+; index of selected character 
+; (note that tmpblo/-hi is used to point the character memory for the character)
 curchind            = $0334
+; maximimum index to character set that can be selected ...$ff
 maxchind            = $0335
+; minimum index to character set that can be selected ...$00
 minchind            = $0336
 
 scrmemp1            = $0400
@@ -331,8 +334,8 @@ mainloop
           bne mainloop ; busy wait
           
 	  inc pscount
-	  jsr cursor 
           jsr readk
+	  jsr chkprgstate
           jmp mainloop 
 ;------------------------------------
 init
@@ -342,7 +345,7 @@ init
           lda #$00
           sta prgstate        ; initial program state is main menu 
           jsr cpchedmem
-          jsr initstate
+          jsr mainmenu 
           rts
 ;------------------------------------
 infiniloop
@@ -357,36 +360,71 @@ cursor
 	; TODO: 
 	; if program state is char ed or tile ed
 	; blink the character selector cursor
-	; if pscount is odd set the selected character value (from variable)
-	; if pscount is even set a cursor character. 
+
+	; see also selchcr
 
 	; after this remove the previous fake cursor/pointer and 
 	; print whole rows of chars without empty rows between
 
+	; note: the cursor blink speed depends on which bit we compare
+	; - the first (rightmost) bit changes every other round, so the blinking speed is huge
+	; - the next bit changes every fourth round so the blinking speed halfs, etc
+	; - here we use 5th bit, which seems nice blinking rate
 	lda pscount
-	ror ; if rightmost bit is 1 the value is odd, otherwise even
+	and #$10 ; 00010000
+	beq cursor_blink
+	; TODO: get the selected character value to acc
+	lda #$01
+
+	jmp cursor_setcrchr
+
+cursor_blink
+
+	; set the screen memory pointer
+	lda #<scrmemp1
+	sta tmpalo
+	lda #>scrmemp1
+	sta tmpahi
+
+	lda #$00 ; @ sign
+
+cursor_setcrchr
+
+	ldy #$00 ; TODO: count y value from 
+	sta (tmpalo),y
+		
 	rts
 
 ;------------------------------------
-; initialize the current program state
+; character selection specific 
+; main loop actions
 ;------------------------------------
-initstate 
+updatechrsel
+	; all the screens with character selection
+	; (character and tile editor)
+	jsr cursor 
+	; todo more
+	rts
+;------------------------------------
+chkprgstate 
 ;------------------------------------
 
           lda prgstate
-          bne initstate_chedit
+          bne chkprgstate_chedit
 
-          ; initialize main menu
-          jsr mainmenu
-          rts
+          ; main menu specific stuff
 
-initstate_chedit
+	  rts
+
+chkprgstate_chedit
+	  ; character editor specific stuff
 
           clc
           ror
           bcc initstate_tile
 
-          ; initialize character editor
+	; do all the character editor specific main loop stuff
+	jsr updatechrsel
 
           rts
 
@@ -395,7 +433,8 @@ initstate_tile
           ror
           bcc initstate_screenmap
 
-          ; initialize tile editor 
+	; do all the tile editor specific main loop stuff	
+	jsr updatechrsel
           
           rts
 
@@ -746,9 +785,9 @@ mcbitpair3
           sta mcbitpair
           rts
 ;------------------------------------
-deccurch  ; select previous character from editable
-          ; characters
-
+; select previous character from editable characters
+;------------------------------------
+deccurch 
           ; do not decrease if minimum index reached
           lda curchind
           cmp minchind
