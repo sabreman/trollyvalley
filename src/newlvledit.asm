@@ -241,10 +241,6 @@ bgcolor2            = $d023
 ;   select previous character from editable characters
 ; inccurch
 ;   select next character from editable characters
-; setselch
-;   calls selchcr and chredit
-; selchcr  
-;   Point out the selected character in the character list
 ; chredit
 ;   Renders character magnified to 8:1
 ; rstcrsr
@@ -361,10 +357,26 @@ cursor
 	; if program state is char ed or tile ed
 	; blink the character selector cursor
 
-	; see also selchcr
-
-	; after this remove the previous fake cursor/pointer and 
+	; after this is implemented remove the previous fake cursor/pointer and 
 	; print whole rows of chars without empty rows between
+
+	; see also selchcr
+	
+	; Curchind contains the index of the selected character.
+	; To get the correct place in screen memory, subtract
+	; minimum cursor index from curchin and add to start of
+	; the screen memory.
+
+        sec
+        lda curchind
+        sbc minchind
+        tay 		; Note (TODO): it is an error if c flag is cleared
+
+	; set the screen memory pointer
+	lda #<scrmemp1
+	sta tmpalo
+	lda #>scrmemp1
+	sta tmpahi
 
 	; note: the cursor blink speed depends on which bit we compare
 	; - the first (rightmost) bit changes every other round, so the blinking speed is huge
@@ -373,28 +385,95 @@ cursor
 	lda pscount
 	and #$10 ; 00010000
 	beq cursor_blink
-	; TODO: get the selected character value to acc
-	lda #$01
+
+	; load the current character index
+	lda curchind 
 
 	jmp cursor_setcrchr
 
 cursor_blink
 
-	; set the screen memory pointer
-	lda #<scrmemp1
-	sta tmpalo
-	lda #>scrmemp1
-	sta tmpahi
-
 	lda #$00 ; @ sign
 
 cursor_setcrchr
-
-	ldy #$00 ; TODO: count y value from 
+	
 	sta (tmpalo),y
-		
 	rts
 
+;------------------------------------
+; Move the character selection cursor
+; if o or p keys are pressed and minimum
+; or maximum index is not reached.
+;
+; This is called from the main input
+; routine (readk) where is already
+; tested if key is pressed at 
+; first place.
+;------------------------------------
+movchrcr
+	; read direction keys first
+	; to see if movement is needed
+
+        lda currkey
+	sta tmp
+
+	cmp #$26	; o key
+        bne movchrcr_p1 
+        jmp movchrcr_m1	; ok, do movement
+
+movchrcr_p1
+
+	cmp #$29	; p key
+        bne movchrcr_x  ; just exit, no movement needed
+
+movchrcr_m1
+
+	; movement was requested 
+	; restore character under the cursor
+
+	; curchind contains now the index of selected character
+	; to get the correct place in screen memory, subtract
+	; minimum cursor index from curchin and add to start of
+	; the screen memory.
+
+        sec
+        lda curchind
+        sbc minchind
+        tay 		; Note (TODO): it is an error if c flag is cleared
+
+	; y contains now the index to screen memory location
+	; from start of the screen memory
+
+	; set the start of the screen memory to tmpalo/-hi
+
+        lda #<scrmemp1
+        sta tmpalo
+        lda #>scrmemp1
+        sta tmpahi
+
+	; set the character under cursor before movement to .A
+	lda curchind
+	sta (tmpalo),y
+
+	; now the character under cursor is restored and we can move the cursor
+
+	lda tmp		; load the pressed key
+	cmp #$26	; o key
+        bne movchrcr_p2 
+        jsr deccurch
+        jmp movchrcr_m2
+
+movchrcr_p2
+
+        jsr inccurch
+
+movchrcr_m2
+
+	jsr chredit ; was setselch
+
+movchrcr_x
+
+	rts
 ;------------------------------------
 ; character selection specific 
 ; main loop actions
@@ -508,8 +587,8 @@ inichared
           jsr setcolmem
           jsr cpchedmem
           ;jsr printchs
-          jsr prnchrs
-          jsr setselch
+          jsr prnchrset ; was prnchrs
+          jsr chredit ; was setselch
 
           rts
 
@@ -558,6 +637,8 @@ readk_state
           rts
 
 readk_editors
+
+	  jsr movchrcr
           jsr readnumk
           jsr readka
           jsr readkb
@@ -589,20 +670,8 @@ readkf5   cmp #$06
 
           ; f7
 readkf7   cmp #$03
-          bne readko
-          nop ; TODO
-          jmp readkax
-
-          ;O
-readko    cmp #$26
-          bne readkp
-          jsr deccurch
-          jmp readkax
-
-          ;P
-readkp    cmp #$29
           bne readkq
-          jsr inccurch
+          nop ; TODO
           jmp readkax
 
           ;Q
@@ -806,7 +875,6 @@ deccurch
           sbc #$00            ; subtract with carry to tmpbhi
           sta tmpbhi
 
-          jsr setselch
 deccurchx
           rts
 ;------------------------------------
@@ -831,7 +899,6 @@ inccurch  ; select next character from editable
           adc #$00            ; add with carry to tmpbhi
           sta tmpbhi
 
-          jsr setselch
 inccurchx
           rts
 
@@ -841,15 +908,16 @@ clrselch
           ; and the character editor
           rts
 ;------------------------------------
-setselch
+;setselch
           ; Points out the selected character in the
           ; character list and render selected character
           ; to the character editor.
-          jsr selchcr
-          jsr chredit
-          rts
+          ;jsr selchcr
+          ;jsr chredit
+          ;rts
 ;------------------------------------
-selchcr
+;selchcr
+	; TODO: this is not needed after cursor implementation
           ; Point out the selected character in the character list by
           ; printing a mark under the selected character.
 
@@ -861,56 +929,56 @@ selchcr
           ; will subtract minchind from curchind to point to 
           ; the first character in the list
 
-          lda #<scrmemp1
-          sta tmpalo
-          lda #>scrmemp1
-          sta tmpahi
+;          lda #<scrmemp1
+;          sta tmpalo
+;          lda #>scrmemp1
+;          sta tmpahi
 
           ; add row to tmpalo/hi
-          clc
-          lda tmpalo
-          adc #$28
-          sta tmpalo
-          lda tmpahi
-          adc #$00
-          sta tmpahi
+;         clc
+;         lda tmpalo
+;         adc #$28
+;         sta tmpalo
+;         lda tmpahi
+;         adc #$00
+;         sta tmpahi
 
-          sec
-          lda curchind
-          sbc minchind
-          tay
+;         sec
+;         lda curchind
+;         sbc minchind
+;         tay
           ; Note: it is an error if c flag is cleared
-setselch0a
-          cpy #$1e
-          bcc setselch0b ; < 30
+;setselch0a
+;         cpy #$1e
+;         bcc setselch0b ; < 30
 
-          jsr emptyrw
+;         jsr emptyrw
 
-          ; add two rows to tmpalo/hi
-          clc
-          lda tmpalo
-          adc #$50
-          sta tmpalo
-          lda tmpahi
-          adc #$00
-          sta tmpahi
+;         ; add two rows to tmpalo/hi
+;         clc
+;         lda tmpalo
+;         adc #$50
+;         sta tmpalo
+;         lda tmpahi
+;         adc #$00
+;         sta tmpahi
 
-          tya
-          sbc #$1d  ; 30
-          tay
-          cpy #$00 ; is this row needed?
-          bne setselch0a
-          inc $d020
+;         tya
+;         sbc #$1d  ; 30
+;         tay
+;         cpy #$00 ; is this row needed?
+;         bne setselch0a
+;         inc $d020
 
-setselch0b
+;setselch0b
           ; now we are on the correct row
-          jsr emptyrw
+;         jsr emptyrw
           ; store .A to .Y
-          tay
-          lda #$00  ;@ sign
-          sta (tmpalo),y
+;         tay
+;         lda #$00  ;@ sign
+;         sta (tmpalo),y
 
-          rts
+;         rts
 ;------------------------------------
 
 chredit
@@ -1226,7 +1294,7 @@ tglchrst1 ; multi color
 
           jsr shwcrsr
           
-tglchrst2 jsr setselch
+tglchrst2 jsr chredit; was setselch
           rts
 ;------------------------------------
 ; load character set from disk
@@ -1431,6 +1499,28 @@ setcolmem_2
           bne setcolmem_2 
           sta colmemp4 
           rts
+
+;------------------------------------
+prnchrset
+        ; set the start location in screen memory
+
+        lda #<scrmemp1
+        sta tmpalo
+        lda #>scrmemp1
+        sta tmpahi
+
+        ; start from character 128
+        lda #$80  ; 128
+        ldy #$00
+
+prnchrset_loop
+
+        sta (tmpalo),y
+        iny
+	adc #$01
+	bne prnchrset_loop
+
+	rts
 
 ;------------------------------------
 ; prints the characters 128-255 
@@ -1713,7 +1803,7 @@ tgchedmem ; toggle the character memory half being
           eor #$01
           sta editstate
           jsr cpchedmem
-          jsr setselch
+          jsr chredit ; was setselch
           rts
 ;------------------------------------
 mvchredmem
@@ -2105,7 +2195,7 @@ px1off1    ; roll bit to right until the right bit reached
           and (tmpblo),y
           sta (tmpblo),y
           
-          jsr setselch
+          jsr chredit ; was setselch
 
           rts
 
@@ -2154,7 +2244,7 @@ px1on1    ; roll bit to right until the right bit reached
           ora (tmpblo),y
           sta (tmpblo),y
           
-          jsr setselch
+          jsr chredit ; was setselch
 
           rts
 ;------------------------------------
@@ -2204,7 +2294,7 @@ pxmc1off2 ; A contains the filter, set the bit pair to 00
           and (tmpblo),y
           sta (tmpblo),y
           
-          jsr setselch
+          jsr chredit ; was setselch
 
           rts
 ;------------------------------------
@@ -2260,7 +2350,7 @@ pxmc1on2  ; A contains the filter, set the bit pair
           ora (tmpblo),y
           sta (tmpblo),y
           
-          jsr setselch
+          jsr chredit ; was setselch
 
           rts
 

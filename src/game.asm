@@ -5386,6 +5386,7 @@ EXITDWN  .BYTE $1B,$0E,$01,$0F,$03,$00
 ; START HERE TO ADD NEW SPRITE OBJECT!
 ;--------------------------------------
 ; sprite id's:
+; todo: add moomin to sprite object system
 ; hattivatti: $00 
 ; morko     : $01 
 ; bug       : $02 
