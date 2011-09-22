@@ -151,6 +151,8 @@ colmemp2            = $d900
 colmemp3            = $da00
 colmemp4            = $db00
 
+scrmem_tiles        = $0518
+
 scrmemitms          = $041e
 
 ; a screen memory location to present 
@@ -537,9 +539,12 @@ initstate_screenmap
 ; render main menu
 ;------------------------------------
 mainmenu
+
+	; todo restoring to mainmenu isn't working always (at all?)
 	
 	; restore the standard character set
         ; to location of characters used in screen
+
           lda #<chrdata1
           sta tmpclo
           lda #>chrdata1
@@ -1716,11 +1721,14 @@ prntiles
           ; characters will be printed using
           ; tmpclo/hi
 
-          lda #<scrmemp1
+	  ; start printing tiles from 
+	  ; the 8th row
+
+          lda #<scrmem_tiles
           sta tmpalo
           sta tmpclo
           
-          lda #>scrmemp1
+          lda #>scrmem_tiles
           sta tmpahi
           sta tmpchi
 
@@ -1734,12 +1742,12 @@ prntiles
           sta tmpchi
 
           ; atmp will be used as a row counter
-          lda #$07
+          lda #$06
           sta atmp
 
           ldx #$00
           ; y is used as tiles per row counter
-          ldy #$0a ; 10
+          ldy #$0d ; 13
 prntiles1
           jsr paintile
 
@@ -1764,7 +1772,7 @@ prntiles1
           inx
           dey
           bne prntiles1 
-          ldy #$0a
+          ldy #$0d 	; 14 tiles per row
 
           ; decrease the row counter
           dec atmp
@@ -1772,18 +1780,18 @@ prntiles1
           beq prntiles2
 
           ; next row of tiles
-          ; add 90 chars (2 rows + 10 chars) to both
+          ; add 81 chars (2 rows + 1 char) to both
           ; screen memory pointers.
           clc 
           lda tmpalo
-          adc #$5a
+          adc #$51
           sta tmpalo
           lda tmpahi
           adc #$00
           sta tmpahi
           clc 
           lda tmpclo
-          adc #$5a
+          adc #$51
           sta tmpclo
           lda tmpchi
           adc #$00
