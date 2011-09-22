@@ -339,9 +339,9 @@ init
 
           ; location of character set being edited
           lda #<chrdataed1
-          sta tmpblo
+          sta tmpclo
           lda #>chrdataed1
-          sta tmpbhi
+          sta tmpchi
           jsr dmpstdch
 
           jsr initchrset
@@ -477,7 +477,7 @@ movchrcr_p2
 
 movchrcr_m2
 
-	jsr chredit ; was setselch
+	jsr chredit
 
 movchrcr_x
 
@@ -541,9 +541,9 @@ mainmenu
 	; restore the standard character set
         ; to location of characters used in screen
           lda #<chrdata1
-          sta tmpblo
+          sta tmpclo
           lda #>chrdata1
-          sta tmpbhi
+          sta tmpchi
 	  jsr dmpstdch 
 
           lda #$00
@@ -603,9 +603,9 @@ inichared
 	; room editor modes)
 
           lda #<chrdata1
-          sta tmpblo
+          sta tmpclo
           lda #>chrdata1
-          sta tmpbhi
+          sta tmpchi
 	  jsr dmpstdch 
 
           ; set the colour memory
@@ -1994,7 +1994,7 @@ stchedmem2
 ; RAM (chrdata1) for editing
 ; input:
 ; point the target memory
-; using tmpblo/-hi
+; using tmpclo/-hi
 ;------------------------------------
 dmpstdch 
           ; turn off interrupts
@@ -2019,7 +2019,7 @@ dmpstdch
 
 dmpstdch1
           lda (tmpalo),y
-          sta (tmpblo),y
+          sta (tmpclo),y
           iny
           bne dmpstdch1
           ;ldy #$00 ; this is alredy 00
@@ -2028,7 +2028,7 @@ dmpstdch1
           ; and tmpclo/-hi by one memory page
           ; (increase high-order byte by one)
           inc tmpahi
-          inc tmpbhi
+          inc tmpchi
           dex
           bne dmpstdch1
 
