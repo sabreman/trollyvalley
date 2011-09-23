@@ -540,7 +540,19 @@ initstate_screenmap
 ;------------------------------------
 mainmenu
 
-	; todo restoring to mainmenu isn't working always (at all?)
+	; todo restoring to mainmenu isn't working always
+	; -> when returning from tile editor
+
+	; check if returning from editor screens
+	; store character set half being edited first
+	; to memory
+	lda prgstate
+	ror
+	bcc mainmenu_cont
+
+	jsr stchedmem
+
+mainmenu_cont
 	
 	; restore the standard character set
         ; to location of characters used in screen
