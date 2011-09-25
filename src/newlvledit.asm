@@ -132,7 +132,7 @@ pscount = $02b8
 ; $0337-$033b
 
 ; $03fc-$03ff
-; $c000-$cfff
+; $c010-$cfff
 
 ; index of selected character 
 ; (note that tmpblo/-hi is used to point the character memory for the character)
@@ -185,6 +185,9 @@ chrdataed1          = $3000 ;... $33ff
 ; character data for characters 128-255 
 chrdataed2          = $3400 ;... $37ff
 chrdataed3          = $37ff ; character data ends
+
+; store character colour values to one page in memory in
+chrcolors           = $c000 ; ... ends in $c0ff
 
 ; the standard character set is copied to $3800
 ; the editor ui will use the lower half of the character set
@@ -348,10 +351,8 @@ init
           jsr dmpstdch
 
           jsr initchrset
-          ;jsr ldchrset 
           lda #$00
           sta prgstate        ; initial program state is main menu 
-          ;jsr cpchedmem
           jsr mainmenu 
           rts
 ;------------------------------------
@@ -531,7 +532,7 @@ initstate_screenmap
 mainmenu
 
           ; todo restoring to mainmenu isn't working always
-          ; -> when returning from tile editor
+          ; -> when returning from tile editor?
 
           ; check if returning from editor screens
           ; store character set half being edited first
@@ -956,14 +957,6 @@ clrselch
           ; and the character editor
           rts
 ;------------------------------------
-;setselch
-          ; Points out the selected character in the
-          ; character list and render selected character
-          ; to the character editor.
-          ;jsr selchcr
-          ;jsr chredit
-          ;rts
-;------------------------------------
 chredit
           ; Renders character magnified 
           ; to 8:1 (a character presents each bit in character data)
@@ -1277,7 +1270,7 @@ tglchrst1 ; multi color
 
           jsr shwcrsr
           
-tglchrst2 jsr chredit; was setselch
+tglchrst2 jsr chredit
           rts
 ;------------------------------------
 ; load character set from disk
@@ -1328,9 +1321,9 @@ ldchrset
 svchrset  ; Save character set to disk.
 
           ; set caracter buffer being edited
-          ; to memory
+          ; to memory store location
           jsr stchedmem
-          ;jsr tgchedmem
+
           ; "Memory is saved from an indirect address on page 0
           ; specified by the accumulator to the address stored
           ; in the .X and .Y registers."
@@ -1483,8 +1476,6 @@ incchcol
 
           ; store the increased colour value
           sta colmemp1,x
-
-          inc $d021
 
           rts
 
@@ -1815,20 +1806,26 @@ paintile
           rts
 
 ;------------------------------------
-tgchedmem ; toggle the character memory half being
-          ; edited to edit memory buffer
+; toggle the character memory half being
+; edited to edit memory buffer          
+;------------------------------------
+tgchedmem 
+          ; store first the current half
           jsr stchedmem
+          ; change the state
           lda editstate
           eor #$01
           sta editstate
+          ; copy the other half to "work memory"
           jsr cpchedmem
-          jsr chredit ; was setselch
+          ; render the selected character to editor
+          jsr chredit
           rts
 ;------------------------------------
 mvchredmem
-            ; Copies x pages of character memory 
+          ; Copies x pages of character memory 
           ; to/from edit memory bank, where x is 
-            ; value stored in X-register.
+          ; value stored in X-register.
 
           ; The source memory is indexed indirectly
           ; using zero page addresses tmpalo/-hi.
@@ -1841,7 +1838,7 @@ mvchredmem
           ; being edited.
 
           ; TODO: an error control if x is more than 8?
-            ; (8 pages is full character set)
+          ; (8 pages is full character set)
  
           ldy #$00
 
@@ -1884,7 +1881,6 @@ cpchedmem
           lsr          ; check the bit 0
           bcc cpchedmem_fullset
 
-
           ldx #$04 ; number of pages being copied (half character set)
 
           ; copy to chrdata2 (upper half of destination character set)
@@ -1895,7 +1891,7 @@ cpchedmem
 
           ; Check the editstate, which half are
           ; we editing and set the source character
-            ; memory pointer accordingly.
+          ; memory pointer accordingly.
 
           lda editstate
           lsr       ; check the bit 0 
@@ -1903,13 +1899,13 @@ cpchedmem
 
 cpchedmem1 
           ; set the source character memory pointer 
-            ; to the half of character set (characters 128-255)
+          ; to the half of character set (characters 128-255)
 
           lda #<chrdataed2
           sta tmpalo
           lda #>chrdataed2
           sta tmpahi
-            jmp cpchedmem_cont2
+          jmp cpchedmem_cont2
 
 cpchedmem_fullset
 
@@ -1924,7 +1920,7 @@ cpchedmem_fullset
 cpchedmem_cont1
 
           ; set the source character memory pointer 
-            ; to the start of character set
+          ; to the start of character set
 
           lda #<chrdataed1
           sta tmpalo
@@ -1934,12 +1930,64 @@ cpchedmem_cont1
 cpchedmem_cont2
 
           jsr mvchredmem
+
+          ; now, set the character colours
+          jsr setchrcolrs
+
           rts
 
 ;------------------------------------
+; sets the character colours for
+; full or half a character set 
+; being presented
+;------------------------------------
+setchrcolrs
+
+          ; copying will be done from end to beginning
+          ; starting from character 255 or 127
+
+          ldx #$00  ; "copy from"-index, default is start from end 
+                    ; (decrement before use)
+          ldy #$00  ; copy counter, default is full set (0), 
+                    ; other choice would be half set (128)
+                    ; (decrement before use)
+
+          ; check the program state
+          ; -> full or half set 
+          lda prgstate
+          lsr          ; check the bit 0
+          bcc setchrcolrs_copy ; go with default values
+
+          ldy #$80  ; copy colour values half set only 
+
+          lda editstate
+          lsr
+          bcs setchrcolrs_copy
+
+          ldx #$80   ; start from character colour 127 to 0
+
+setchrcolrs_copy
+
+          dey
+          dex
+
+setchrcolrs_loop
+
+          lda chrcolors,x 
+          sta colmemp1,y
+          dex
+          dey 
+          bne setchrcolrs_loop
+
+          rts
+
+;------------------------------------
+; stores the half of character set being
+; edited from chrdata2 to chrdadaed1/2
+; stores also the character color values
+; to chrcolors
+;------------------------------------
 stchedmem
-          ; stores the half of character set being
-          ; edited from chrdata2 to chrdadaed1/2
 
           ; check the program state, which half are
           ; we editing
@@ -1968,6 +2016,30 @@ stchedmem2
 
           ldx #$04 ; number of pages being copied (half character set)
           jsr mvchredmem
+
+          ; now store the character color values to memory starting from 
+          ; chrcolors,x where x is either 0 or 128 regarding to the half 
+          ; of character set being edited.
+
+          ldy #$00 ; by default copy colours for first char set half 
+          ldx #$00  
+
+          lda editstate
+          lsr       ; check the bit 0 
+          bcc stchedmem_cpycolrs
+
+          ldy #$80  ; copy colours for second char set half
+
+stchedmem_cpycolrs
+
+          lda colmemp1,x
+          sta chrcolors,y
+          iny
+          inx
+
+          cpx #$80 ; copy colour values from first 128 colour memory locations
+          bne stchedmem_cpycolrs
+
           rts
 
 ;------------------------------------
@@ -2231,7 +2303,7 @@ px1off1    ; roll bit to right until the right bit reached
           and (tmpblo),y
           sta (tmpblo),y
           
-          jsr chredit ; was setselch
+          jsr chredit
 
           rts
 
@@ -2280,7 +2352,7 @@ px1on1    ; roll bit to right until the right bit reached
           ora (tmpblo),y
           sta (tmpblo),y
           
-          jsr chredit ; was setselch
+          jsr chredit
 
           rts
 ;------------------------------------
@@ -2330,7 +2402,7 @@ pxmc1off2 ; A contains the filter, set the bit pair to 00
           and (tmpblo),y
           sta (tmpblo),y
           
-          jsr chredit ; was setselch
+          jsr chredit
 
           rts
 ;------------------------------------
@@ -2386,7 +2458,7 @@ pxmc1on2  ; A contains the filter, set the bit pair
           ora (tmpblo),y
           sta (tmpblo),y
           
-          jsr chredit ; was setselch
+          jsr chredit
 
           rts
 
