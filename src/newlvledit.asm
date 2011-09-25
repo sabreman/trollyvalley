@@ -37,20 +37,21 @@
 ; 2       : increase background color 0
 ; 3       : increase background color 1
 ; 4       : incerase background color 2
-; 5       : select multi color pixel type (00)
-; 6       : select multi color pixel type (01)
-; 7       : select multi color pixel type (10)
-; 8       : select multi color pixel type (11)
+; 5       : increase character color (this color will be stored for the character)
+; 6       : select multi color pixel type (00)
+; 7       : select multi color pixel type (01)
+; 8       : select multi color pixel type (10)
+; 9       : select multi color pixel type (11)
 ; N       : set pixel on
 ; B       : set pixel off
 
 ; Tile editor keys
-; U	  : select previous tile used for editing
+; U       : select previous tile used for editing
 ; I       : select next tile used for editing
 ; Next / previous batch of tiles is presented when last / first tile
 ; in screen is passed. When last / first batch of tiles is passed
 ; the first / last set of tiles is presented.
-; N	  : set selected character to a current location in a tile being edited
+; N       : set selected character to a current location in a tile being edited
 
 
 atmp                = $02
@@ -331,13 +332,13 @@ mainloop
           cmp #$ff
           bne mainloop ; busy wait
           
-	  inc pscount
+          inc pscount
           jsr readk
-	  jsr chkprgstate
+          jsr chkprgstate
           jmp mainloop 
 ;------------------------------------
 init
-	  ; dump the standard character set from rom to ram to editable set
+          ; dump the standard character set from rom to ram to editable set
 
           ; location of character set being edited
           lda #<chrdataed1
@@ -355,60 +356,47 @@ init
           rts
 ;------------------------------------
 infiniloop
-	inc $d020
-	jmp infiniloop
-	rts
+          inc $d020
+          jmp infiniloop
+          rts
 
 ;------------------------------------
 ; blink the character selector cursor
 ;------------------------------------
 cursor
-	; TODO: 
-	; if program state is char ed or tile ed
-	; blink the character selector cursor
+          ; if program state is char ed or tile ed
+          ; blink the character selector cursor
 
-	; after this is implemented remove the previous fake cursor/pointer and 
-	; print whole rows of chars without empty rows between
+          ; Curchind contains the index of the selected character.
+          ; To get the correct place in screen memory, subtract
+          ; minimum cursor index from curchin and add to start of
+          ; the screen memory.
 
-	; see also selchcr
-	
-	; Curchind contains the index of the selected character.
-	; To get the correct place in screen memory, subtract
-	; minimum cursor index from curchin and add to start of
-	; the screen memory.
+          sec
+          lda curchind
+          sbc minchind
+          tax
 
-        sec
-        lda curchind
-        sbc minchind
-        tay 		; Note (TODO): it is an error if c flag is cleared
+          ; note: the cursor blink speed depends on which bit we compare
+          ; - the first (rightmost) bit changes every other round, so the blinking speed is huge
+          ; - the next bit changes every fourth round so the blinking speed halfs, etc
+          ; - here we use 5th bit, which seems nice blinking rate
+          lda pscount
+          and #$10 ; 00010000
+          beq cursor_blink
 
-	; set the screen memory pointer
-	lda #<scrmemp1
-	sta tmpalo
-	lda #>scrmemp1
-	sta tmpahi
-
-	; note: the cursor blink speed depends on which bit we compare
-	; - the first (rightmost) bit changes every other round, so the blinking speed is huge
-	; - the next bit changes every fourth round so the blinking speed halfs, etc
-	; - here we use 5th bit, which seems nice blinking rate
-	lda pscount
-	and #$10 ; 00010000
-	beq cursor_blink
-
-	; load the current character index
-	lda curchind 
-
-	jmp cursor_setcrchr
+          ; load the current character index
+          lda curchind 
+          jmp cursor_setcrchr
 
 cursor_blink
 
-	lda #$00 ; @ sign
+          lda #$00 ; @ sign
 
 cursor_setcrchr
-	
-	sta (tmpalo),y
-	rts
+          
+          sta scrmemp1,x
+          rts
 
 ;------------------------------------
 ; Move the character selection cursor
@@ -421,79 +409,80 @@ cursor_setcrchr
 ; first place.
 ;------------------------------------
 movchrcr
-	; read direction keys first
-	; to see if movement is needed
+          ; read direction keys first
+          ; to see if movement is needed
 
-        lda currkey
-	sta tmp
+          lda currkey
+          sta tmp
 
-	cmp #$26	; o key
-        bne movchrcr_p1 
-        jmp movchrcr_m1	; ok, do movement
+          cmp #$26          ; o key
+          bne movchrcr_p1 
+          jmp movchrcr_m1          ; ok, do movement
 
 movchrcr_p1
 
-	cmp #$29	; p key
-        bne movchrcr_x  ; just exit, no movement needed
+          cmp #$29          ; p key
+          bne movchrcr_x  ; just exit, no movement needed
 
 movchrcr_m1
 
-	; movement was requested 
-	; restore character under the cursor
+          ; movement was requested 
+          ; restore character under the cursor
 
-	; curchind contains now the index of selected character
-	; to get the correct place in screen memory, subtract
-	; minimum cursor index from curchin and add to start of
-	; the screen memory.
+          ; curchind contains now the index of selected character
+          ; to get the correct place in screen memory, subtract
+          ; minimum cursor index from curchin and add to start of
+          ; the screen memory.
 
-        sec
-        lda curchind
-        sbc minchind
-        tay 		; Note (TODO): it is an error if c flag is cleared
+          sec
+          lda curchind
+          sbc minchind
+          tay                     ; Note (TODO): it is an error if c flag is cleared
 
-	; y contains now the index to screen memory location
-	; from start of the screen memory
+          ; y contains now the index to screen memory location
+          ; from start of the screen memory
 
-	; set the start of the screen memory to tmpalo/-hi
+          ; set the start of the screen memory to tmpalo/-hi
 
-        lda #<scrmemp1
-        sta tmpalo
-        lda #>scrmemp1
-        sta tmpahi
+          lda #<scrmemp1
+          sta tmpalo
+          lda #>scrmemp1
+          sta tmpahi
 
-	; set the character under cursor before movement to .A
-	lda curchind
-	sta (tmpalo),y
+          ; set the character under cursor before movement to .A
+          lda curchind
+          sta (tmpalo),y
 
-	; now the character under cursor is restored and we can move the cursor
+          ; now the character under cursor is restored and we can move the cursor
 
-	lda tmp		; load the pressed key
-	cmp #$26	; o key
-        bne movchrcr_p2 
-        jsr deccurch
-        jmp movchrcr_m2
+          lda tmp           ; load the pressed key
+          cmp #$26          ; o key
+          bne movchrcr_p2 
+          jsr deccurch
+          jmp movchrcr_m2
 
 movchrcr_p2
 
-        jsr inccurch
+          jsr inccurch
 
 movchrcr_m2
 
-	jsr chredit
+          jsr chredit
 
 movchrcr_x
 
-	rts
+          rts
 ;------------------------------------
 ; character selection specific 
 ; main loop actions
 ;------------------------------------
 updatechrsel
-	; all the screens with character selection
-	; (character and tile editor)
-	jsr cursor 
-	; todo more
-	rts
+          ; all the screens with character selection
+          ; (character and tile editor)
+          jsr cursor 
+          ; todo more
+          rts
+
 ;------------------------------------
 chkprgstate 
 ;------------------------------------
@@ -503,17 +492,18 @@ chkprgstate
 
           ; main menu specific stuff
 
-	  rts
+          rts
 
 chkprgstate_chedit
-	  ; character editor specific stuff
+
+          ; character editor specific stuff
 
           clc
           ror
           bcc initstate_tile
 
-	; do all the character editor specific main loop stuff
-	jsr updatechrsel
+          ; do all the character editor specific main loop stuff
+          jsr updatechrsel
 
           rts
 
@@ -522,8 +512,8 @@ initstate_tile
           ror
           bcc initstate_screenmap
 
-	; do all the tile editor specific main loop stuff	
-	jsr updatechrsel
+          ; do all the tile editor specific main loop stuff          
+          jsr updatechrsel
           
           rts
 
@@ -540,28 +530,28 @@ initstate_screenmap
 ;------------------------------------
 mainmenu
 
-	; todo restoring to mainmenu isn't working always
-	; -> when returning from tile editor
+          ; todo restoring to mainmenu isn't working always
+          ; -> when returning from tile editor
 
-	; check if returning from editor screens
-	; store character set half being edited first
-	; to memory
-	lda prgstate
-	ror
-	bcc mainmenu_cont
+          ; check if returning from editor screens
+          ; store character set half being edited first
+          ; to memory
+          lda prgstate
+          ror
+          bcc mainmenu_cont
 
-	jsr stchedmem
+          jsr stchedmem
 
 mainmenu_cont
-	
-	; restore the standard character set
+          
+          ; restore the standard character set
         ; to location of characters used in screen
 
           lda #<chrdata1
           sta tmpclo
           lda #>chrdata1
           sta tmpchi
-	  jsr dmpstdch 
+            jsr dmpstdch 
 
           lda #$00
           sta prgstate
@@ -575,7 +565,7 @@ mainmenu_cont
 ;------------------------------------
 inichared
 
-   	; set the program state to character editor
+          ; set the program state to character editor
           lda #$01
           sta prgstate
           lda #$00
@@ -593,7 +583,7 @@ inichared
           ; Set the index of current character
           ; and minimum / maximum character index
           lda #$80
-          sta minchind	; show only half of char set at once
+          sta minchind          ; show only half of char set at once
           sta curchind
           lda #$ff
           sta maxchind
@@ -613,23 +603,23 @@ inichared
           lda #>chedstart
           sta tmpdhi
 
-       	; restore the standard character set
+                 ; restore the standard character set
         ; to location of characters used in screen
-	; (we need to do this here since the whole 
-	; UI character set is overwritten in tile and 
-	; room editor modes)
+          ; (we need to do this here since the whole 
+          ; UI character set is overwritten in tile and 
+          ; room editor modes)
 
           lda #<chrdata1
           sta tmpclo
           lda #>chrdata1
           sta tmpchi
-	  jsr dmpstdch 
+            jsr dmpstdch 
 
           ; set the colour memory
           lda #$09
           jsr setcolmem
 
-	; load the half editable character set
+          ; load the half editable character set
           jsr cpchedmem
 
           jsr clearscr
@@ -641,21 +631,21 @@ inichared
 ; initialize the tile editor screen
 ;------------------------------------
 initileed
-	; set the program state to tile editor
-	lda #$02
-	sta prgstate
+          ; set the program state to tile editor
+          lda #$02
+          sta prgstate
 
-	lda #$00
-	sta minchind	; show the whole character set at once
-	jsr setcolmem
+          lda #$00
+          sta minchind          ; show the whole character set at once
+          jsr setcolmem
 
-	; load the full editable character set
-	jsr cpchedmem
+          ; load the full editable character set
+          jsr cpchedmem
 
-	jsr clearscr
-        jsr prntiles
-	jsr prnchrset
-        rts
+          jsr clearscr
+          jsr prntiles
+          jsr prnchrset
+          rts
 
 ;------------------------------------
 iniroomed
@@ -690,7 +680,7 @@ readk_state
 
 readk_editors
 
-	  jsr movchrcr
+          jsr movchrcr
           jsr readnumk
           jsr readka
           jsr readkb
@@ -839,30 +829,36 @@ readk4    cmp #$0b
           jsr incbgc2
           jmp readknumx
 
-          ; key 5 
-          ; set multicolor bitpair 00
+          ; key 5
 readk5    cmp #$10
           bne readk6
-          jsr mcbitpair0
+          jsr incchcol
           jmp readknumx
 
           ; key 6 
-          ; set multicolor bitpair 01
-readk6    cmp #$13
+          ; set multicolor bitpair 00
+readk6    cmp #$10
           bne readk7
-          jsr mcbitpair1
+          jsr mcbitpair0
           jmp readknumx
 
           ; key 7 
-          ; set multicolor bitpair 10
-readk7    cmp #$18
+          ; set multicolor bitpair 01
+readk7    cmp #$13
           bne readk8
-          jsr mcbitpair2
+          jsr mcbitpair1
           jmp readknumx
 
           ; key 8 
+          ; set multicolor bitpair 10
+readk8    cmp #$18
+          bne readk9
+          jsr mcbitpair2
+          jmp readknumx
+
+          ; key 9 
           ; set multicolor bitpair 11
-readk8    cmp #$1b
+readk9    cmp #$1b
           bne readknumx
           jsr mcbitpair3
           jmp readknumx
@@ -968,71 +964,6 @@ clrselch
           ;jsr chredit
           ;rts
 ;------------------------------------
-;selchcr
-	; TODO: this is not needed after cursor implementation
-          ; Point out the selected character in the character list by
-          ; printing a mark under the selected character.
-
-          ; 30 chars are currently printed per row.
-          ; - curchind contains the selected character
-          ; - curchind minimum value is minchind
-          ;   and maximum value is maxchind
-
-          ; will subtract minchind from curchind to point to 
-          ; the first character in the list
-
-;          lda #<scrmemp1
-;          sta tmpalo
-;          lda #>scrmemp1
-;          sta tmpahi
-
-          ; add row to tmpalo/hi
-;         clc
-;         lda tmpalo
-;         adc #$28
-;         sta tmpalo
-;         lda tmpahi
-;         adc #$00
-;         sta tmpahi
-
-;         sec
-;         lda curchind
-;         sbc minchind
-;         tay
-          ; Note: it is an error if c flag is cleared
-;setselch0a
-;         cpy #$1e
-;         bcc setselch0b ; < 30
-
-;         jsr emptyrw
-
-;         ; add two rows to tmpalo/hi
-;         clc
-;         lda tmpalo
-;         adc #$50
-;         sta tmpalo
-;         lda tmpahi
-;         adc #$00
-;         sta tmpahi
-
-;         tya
-;         sbc #$1d  ; 30
-;         tay
-;         cpy #$00 ; is this row needed?
-;         bne setselch0a
-;         inc $d020
-
-;setselch0b
-          ; now we are on the correct row
-;         jsr emptyrw
-          ; store .A to .Y
-;         tay
-;         lda #$00  ;@ sign
-;         sta (tmpalo),y
-
-;         rts
-;------------------------------------
-
 chredit
           ; Renders character magnified 
           ; to 8:1 (a character presents each bit in character data)
@@ -1520,6 +1451,43 @@ clearscr2
           bne clearscr2
           sta scrmemp4 
           rts
+
+;------------------------------------
+; increases the character color value
+; for selected character, this
+; value will be stored for the 
+; character. Values 8...15 are multi
+; color values.
+;------------------------------------
+incchcol
+          ; curchind contains the 
+          ; index for selected character
+
+          ; to get the actual screen
+          ; index subtract minchind
+          ; from curchind
+
+          sec
+          lda curchind
+          sbc minchind
+
+          ; c should never be set zero in this case
+          ; curchind is always more than or equal 
+          ; to minchind
+
+          tax
+
+          ; get the current colour value
+          lda colmemp1,x
+          adc #$01
+
+          ; store the increased colour value
+          sta colmemp1,x
+
+          inc $d021
+
+          rts
+
 ;------------------------------------
 ; sets the colour memory
 ; input: accu contains the colour value
@@ -1554,27 +1522,21 @@ setcolmem_2
 
 ;------------------------------------
 prnchrset
-        ; set the start location in screen memory
 
-        lda #<scrmemp1
-        sta tmpalo
-        lda #>scrmemp1
-        sta tmpahi
+          ; Set the start character regarding 
+          ; to value in minchind
 
-	; Set the start character regarding 
-	; to value in minchind
-
-        lda minchind
-        ldy #$00
+          lda minchind
+          ldx #$00
 
 prnchrset_loop
 
-        sta (tmpalo),y
-        iny
-	adc #$01
-	bne prnchrset_loop
+          sta scrmemp1,x
+          inx
+          adc #$01
+          bne prnchrset_loop
 
-	rts
+          rts
 
 ;------------------------------------
 ; prints the characters 128-255 
@@ -1733,8 +1695,8 @@ prntiles
           ; characters will be printed using
           ; tmpclo/hi
 
-	  ; start printing tiles from 
-	  ; the 8th row
+            ; start printing tiles from 
+            ; the 8th row
 
           lda #<scrmem_tiles
           sta tmpalo
@@ -1784,7 +1746,7 @@ prntiles1
           inx
           dey
           bne prntiles1 
-          ldy #$0d 	; 14 tiles per row
+          ldy #$0d           ; 14 tiles per row
 
           ; decrease the row counter
           dec atmp
@@ -1864,9 +1826,9 @@ tgchedmem ; toggle the character memory half being
           rts
 ;------------------------------------
 mvchredmem
-	  ; Copies x pages of character memory 
+            ; Copies x pages of character memory 
           ; to/from edit memory bank, where x is 
-	  ; value stored in X-register.
+            ; value stored in X-register.
 
           ; The source memory is indexed indirectly
           ; using zero page addresses tmpalo/-hi.
@@ -1879,7 +1841,7 @@ mvchredmem
           ; being edited.
 
           ; TODO: an error control if x is more than 8?
-	  ; (8 pages is full character set)
+            ; (8 pages is full character set)
  
           ldy #$00
 
@@ -1909,21 +1871,21 @@ mvchredmem1
 ;------------------------------------
 cpchedmem
 
-	; check first the program state
-	; if tile editor or room editor
-	; - copy the full set
-	; - set the number of pages being copied in x to 8
-	; if character editor 
-	; - copy only half set
-	; - check which half
-	; - set the number of pages being copied in x to 4
+          ; check first the program state
+          ; if tile editor or room editor
+          ; - copy the full set
+          ; - set the number of pages being copied in x to 8
+          ; if character editor 
+          ; - copy only half set
+          ; - check which half
+          ; - set the number of pages being copied in x to 4
 
-	lda prgstate
-	lsr	; check the bit 0
-	bcc cpchedmem_fullset
+          lda prgstate
+          lsr          ; check the bit 0
+          bcc cpchedmem_fullset
 
 
-	ldx #$04 ; number of pages being copied (half character set)
+          ldx #$04 ; number of pages being copied (half character set)
 
           ; copy to chrdata2 (upper half of destination character set)
           lda #<chrdata2
@@ -1933,7 +1895,7 @@ cpchedmem
 
           ; Check the editstate, which half are
           ; we editing and set the source character
-	  ; memory pointer accordingly.
+            ; memory pointer accordingly.
 
           lda editstate
           lsr       ; check the bit 0 
@@ -1941,17 +1903,17 @@ cpchedmem
 
 cpchedmem1 
           ; set the source character memory pointer 
-	  ; to the half of character set (characters 128-255)
+            ; to the half of character set (characters 128-255)
 
           lda #<chrdataed2
           sta tmpalo
           lda #>chrdataed2
           sta tmpahi
-	  jmp cpchedmem_cont2
+            jmp cpchedmem_cont2
 
 cpchedmem_fullset
 
-	ldx #$08	; 8 pages is full set
+          ldx #$08          ; 8 pages is full set
 
           ; copy to chrdata1 (start of destination character set)
           lda #<chrdata1
@@ -1962,7 +1924,7 @@ cpchedmem_fullset
 cpchedmem_cont1
 
           ; set the source character memory pointer 
-	  ; to the start of character set
+            ; to the start of character set
 
           lda #<chrdataed1
           sta tmpalo
@@ -2004,7 +1966,7 @@ stchedmem2
           lda #>chrdata2
           sta tmpahi
 
-	ldx #$04 ; number of pages being copied (half character set)
+          ldx #$04 ; number of pages being copied (half character set)
           jsr mvchredmem
           rts
 
