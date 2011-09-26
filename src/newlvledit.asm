@@ -1327,8 +1327,10 @@ ldchrset
           ; call LOAD (Load or verify file) ; kernal routine
           lda #$00            ; 0 = load, 1-255 verify
           ; set the memory location where to store the data:
-          ldx #<chrdataed1      ; load address (low-byte)
-          ldy #>chrdataed1      ; load address (hi-byte)
+          ;ldx #<chrdataed1      ; load address (low-byte)
+          ldx #<chrcolors
+          ;ldy #>chrdataed1      ; load address (hi-byte)
+          ldy #>chrcolors
           jsr $ffd5           ; LOAD routine
 
           rts
@@ -1362,9 +1364,11 @@ svchrset  ; Save character set to disk.
 
           ; set data start address
 
-          lda #<chrdataed1 
+          ;lda #<chrdataed1 
+          lda #<chrcolors
           sta tmpalo
-          lda #>chrdataed1 
+          ;lda #>chrdataed1 
+          lda #>chrcolors
           sta tmpahi
 
           ; set data end address
