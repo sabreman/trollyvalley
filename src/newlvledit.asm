@@ -164,9 +164,16 @@ scrcurch            = $0678
 ; (magnified character)
 chedstart           = $06c8
 
-; store character set to basic memory
-
+;-----------------------------------------------------------
+; data areas (stored to basic memory) 
+; these will be stored/restored to/from disk 
+;
+; currently from $2b00 to $37ff 
+;
 ; game data to be stored ... $37ff
+
+; store character colour values to one page in memory in
+chrcolors           = $2b00 ; ... ends in $2bff
 
 ; Tile data is stored from $2c00 to $2fff (4 pages of memory)
 ; Each tile consists of 4 characters (2 x 2).
@@ -179,22 +186,26 @@ tiledata2           = $2d00   ; ... $2dff
 tiledata3           = $2e00   ; ... $2eff
 tiledata4           = $2f00   ; ... $2fff
 
-; character set being edited (half a set at time)
+; character set store memory 
+; characters being edited are copied to work memory (half a set at time)
 ; character data for characters 0-127
 chrdataed1          = $3000 ;... $33ff
 ; character data for characters 128-255 
 chrdataed2          = $3400 ;... $37ff
 chrdataed3          = $37ff ; character data ends
 
-; store character colour values to one page in memory in
-chrcolors           = $c000 ; ... ends in $c0ff
+;-----------------------------------------------------------
 
 ; the standard character set is copied to $3800
 ; the editor ui will use the lower half of the character set
 chrdata1            = $3800 ;... $3bff
+; character set work memory: 
 ; the half being edited from $3000-$37ff will be copied
 ; to $3c00-$3fff 
 chrdata2            = $3c00 ;... $3fff
+;-----------------------------------------------------------
+
+prgdata             = $8000 ; ...
 
 ; character generator ROM image
 chrrom              = $d000 ;... $dfff
@@ -320,7 +331,8 @@ bgcolor2            = $d023
 ;------------------------------------
 
           ; sys 32768
-          *= $8000 
+          *= prgdata 
+
 ; initializing:
 
           jsr init
@@ -653,6 +665,7 @@ iniroomed
           rts
 ;------------------------------------
 savedata
+          jsr svchrset
           rts
 ;------------------------------------
 loaddata
@@ -695,13 +708,15 @@ readka
           ; f1 key : load
           cmp #$04
           bne readkf3
-          jsr ldchrset 
+          ;load is now done only from main screen ... jsr ldchrset 
+          ;TODO: replace this with something else
           jmp readkax
 
           ; f3 key : save
 readkf3   cmp #$05
           bne readkf5
-          jsr svchrset
+          ; save is now done only from main screen ... jsr svchrset
+          ; TODO: replace this with something else
           jmp readkax
 
           ; f5
@@ -1319,10 +1334,6 @@ ldchrset
           rts
 ;------------------------------------
 svchrset  ; Save character set to disk.
-
-          ; set caracter buffer being edited
-          ; to memory store location
-          jsr stchedmem
 
           ; "Memory is saved from an indirect address on page 0
           ; specified by the accumulator to the address stored
