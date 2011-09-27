@@ -480,6 +480,11 @@ movchrcr_p2
 
 movchrcr_m2
 
+          ; check program state if 
+          ; need to update the character editor view
+          lda prgstate
+          lsr
+          bcc movchrcr_x
           jsr chredit
 
 movchrcr_x
@@ -490,6 +495,7 @@ movchrcr_x
 ; main loop actions
 ;------------------------------------
 updatechrsel
+
           ; all the screens with character selection
           ; (character and tile editor)
           jsr cursor 
@@ -504,47 +510,40 @@ chkprgstate
           bne chkprgstate_chedit
 
           ; main menu specific stuff
-
           rts
 
 chkprgstate_chedit
 
           ; character editor specific stuff
 
-          clc
-          ror
-          bcc initstate_tile
+          lsr
+          bcc chkprgstate_tile
 
           ; do all the character editor specific main loop stuff
           jsr updatechrsel
-
           rts
 
-initstate_tile
+chkprgstate_tile
 
-          ror
-          bcc initstate_screenmap
+          lsr
+          bcc chkprgstate_screenmap
 
           ; do all the tile editor specific main loop stuff          
           jsr updatechrsel
-          
           rts
 
-initstate_screenmap
+chkprgstate_screenmap
 
-          ror
+          lsr
           ; bcc ...
           ; TODO
           ; rest of the states
-
           rts
+
 ;------------------------------------
 ; render main menu
 ;------------------------------------
 mainmenu
-
-          ; todo restoring to mainmenu isn't working always
-          ; -> when returning from tile editor?
 
           ; check if returning from editor screens
           ; store character set half being edited first
@@ -558,13 +557,13 @@ mainmenu
 mainmenu_cont
           
           ; restore the standard character set
-        ; to location of characters used in screen
+          ; to location of characters used in screen
 
           lda #<chrdata1
           sta tmpclo
           lda #>chrdata1
           sta tmpchi
-            jsr dmpstdch 
+          jsr dmpstdch 
 
           lda #$00
           sta prgstate
@@ -616,8 +615,8 @@ inichared
           lda #>chedstart
           sta tmpdhi
 
-                 ; restore the standard character set
-        ; to location of characters used in screen
+          ; restore the standard character set
+          ; to location of characters used in screen
           ; (we need to do this here since the whole 
           ; UI character set is overwritten in tile and 
           ; room editor modes)
@@ -626,7 +625,7 @@ inichared
           sta tmpclo
           lda #>chrdata1
           sta tmpchi
-            jsr dmpstdch 
+          jsr dmpstdch 
 
           ; set the colour memory
           lda #$09
@@ -650,7 +649,19 @@ initileed
 
           lda #$00
           sta minchind          ; show the whole character set at once
-          jsr setcolmem
+          sta curchind
+          lda #$ff
+          sta maxchind
+
+          ; set the pointer to current character
+          ; in the character memory top half
+          ; where editable character set is loaded to
+          lda #<chrdata1
+          sta tmpblo 
+          lda #>chrdata1
+          sta tmpbhi
+
+          jsr setcolmem       
 
           ; load the full editable character set
           jsr cpchedmem
@@ -683,21 +694,38 @@ readk
           bne readk_state
           jsr mainmenu
           rts
+
 readk_state
+
           ; check program state
           lda prgstate
-          bne readk_editors
+          bne readk_chredit
 
           ; read main menu keys
           jsr readkmain
           rts
 
-readk_editors
+readk_chredit
 
+          lsr
+          bcc readk_tiledit
           jsr movchrcr
           jsr readnumk
           jsr readka
           jsr readkb
+          rts
+
+readk_tiledit
+          
+          lsr
+          bcc readk_roomedit
+          jsr movchrcr
+          rts
+
+readk_roomedit
+
+          ; ...
+
 readkx 
           rts
 ;------------------------------------
@@ -762,7 +790,7 @@ readkm    ; M (editor cursor down)
           jsr mvdown
           jmp readkax
 
-readknn    ; N (set single color pixel on)
+readknn   ; N (set single color pixel on)
           cmp #$27  ; 39
           bne readkbb
           jsr px1on 
