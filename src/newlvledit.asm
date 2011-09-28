@@ -126,8 +126,39 @@ tmp    = $02b7
 ; a program step counter 0..255
 pscount = $02b8
 
+; TODO: Now the edit state should be one of the following
+;       only characters of certain character group should
+;       be presented in character editor and tile editor
+;       at once.
+; the character group specs (11 bytes)
+; byte no:          description:
+chgrp_bg1         = $02b9   ; 1st background char value
+                            ; (also text numbers etc.
+                            ; characters that are not interacted in game world
+                            ; but can be used as background characters)
+                            ; characters values from $00...$39 58 chars
+chgrp_bg2         = $02ba   ; no of background chars
+chgrp_fl1         = $02bb   ; 1st floor char
+chgrp_fl2         = $02bc   ; no of floor chars
+chgrp_wl1         = $02bd   ; 1st wall char
+chgrp_wl2         = $02be   ; no of wall chars
+chgrp_sc1         = $02bf   ; 1st stair char
+chgrp_sc2         = $02c0   ; no of stair chars
+chgrp_lh1         = $02c1   ; 1st lethal char
+chgrp_lh2         = $02c2   ; no of lethal chars
+chgrp_ev1         = $02c3   ; elevator 
+chgrp_ev2         = $02c4
+chgrp_cl1         = $02c5   ; climbable (ladder etc)
+chgrp_cl2         = $02c6
+chgrp_co1         = $02c7   ; collectible
+chgrp_co2         = $02c8
+
+; collision can be then simply tested e.g. 
+; if character values is >= chgrp_fl1 and character value is < chgrp_wl1 
+; it is a floor character and it cannot be fallen through. 
+
 ; free memory:
-; $02b9-$02ff
+; $02c9-$02ff
 ; $0313
 ; $0337-$033b
 
@@ -171,9 +202,14 @@ chedstart           = $06c8
 ; currently from $2b00 to $37ff 
 ;
 ; game data to be stored ... $37ff
+;
+
+; Character groups for collision testing etc.
+; Character can belong only to a one group 
+; at once.  
 
 ; store character colour values to one page in memory in
-chrcolors           = $2b00 ; ... ends in $2bff
+chrcolors           = $2b00 ; (11008) ... ends in $2bff
 
 ; Tile data is stored from $2c00 to $2fff (4 pages of memory)
 ; Each tile consists of 4 characters (2 x 2).
