@@ -20,7 +20,24 @@
 ; CLR/HOME: Return to main menu
 
 ; Common keys in character editor and tile editor
-; Q       : toggle charset half being used for editing
+; -----------------------------------------------
+;               : Character group selection keys 
+; Shift+1       : Background chars
+; Shift+2       : Floor chars 
+; Shift+3       : Wall chars 
+; Shift+4       : Stair chars 
+; Shift+5       : Lethal chars 
+; Shift+6       : Elevator chars 
+; Shift+7       : Climbable chars 
+; Shift+8       : Collectible chars 
+; Shift+9       : - 
+; Shift+0       : All chars / half a set
+
+; 1       : toggle multicolor / normal
+; 2       : increase background color 0
+; 3       : increase background color 1
+; 4       : incerase background color 2
+
 ; O       : select previous character used for editing
 ; P       : select next character used for editing
 ; 
@@ -29,30 +46,22 @@
 ; K       : move editor cursor up
 ; M       : move editor cursor down
 
-; F1      : load from disk
-; F2      : save to disk
-
-; Character editor keys:
-; 1       : toggle multicolor / normal
-; 2       : increase background color 0
-; 3       : increase background color 1
-; 4       : incerase background color 2
+; Character editor keys
+; ---------------------
 ; 5       : increase character color (this color will be stored for the character)
 ; 6       : select multi color pixel type (00)
 ; 7       : select multi color pixel type (01)
 ; 8       : select multi color pixel type (10)
 ; 9       : select multi color pixel type (11)
+
 ; N       : set pixel on
 ; B       : set pixel off
 
 ; Tile editor keys
+; ----------------
 ; U       : select previous tile used for editing
 ; I       : select next tile used for editing
-; Next / previous batch of tiles is presented when last / first tile
-; in screen is passed. When last / first batch of tiles is passed
-; the first / last set of tiles is presented.
 ; N       : set selected character to a current location in a tile being edited
-
 
 atmp                = $02
 ; currently pressed keycode is stored to $00cb
@@ -75,6 +84,10 @@ tmpchi              = $2c     ; ... start of BASIC txt
 tmpdlo              = $37     ; pointer to highest...
 tmpdhi              = $38     ; ... address used by BASIC
 
+shflag              = $028d
+
+; $02a7 to $02ff is unused memory
+; -------------------------------
 btmp                = $02a7
 ctmp                = $02a8
 
@@ -157,8 +170,21 @@ chgrp_co2         = $02c8
 ; if character values is >= chgrp_fl1 and character value is < chgrp_wl1 
 ; it is a floor character and it cannot be fallen through. 
 
+; selected character group(s)
+; bit|show chargroup
+; -------------------
+; 1  |background 
+; 2  |floor
+; 3  |wall
+; 4  |stair
+; 5  |lethal
+; 6  |elevator
+; 7  |climbable
+; 8  |collectible 
+chrgrps = $02c9
+
 ; free memory:
-; $02c9-$02ff
+; $02ca-$02ff
 ; $0313
 ; $0337-$033b
 
@@ -274,7 +300,7 @@ bgcolor2            = $d023
 ;   read keyboard input
 ; readka
 ; readkb
-; readnumk
+; readchredk
 ;   read keyboard input (numeric keys)
 ; incbgc0
 ;   increase background color 0
@@ -746,7 +772,8 @@ readk_chredit
           lsr
           bcc readk_tiledit
           jsr movchrcr
-          jsr readnumk
+          jsr readchsetk
+          jsr readchredk
           jsr readka
           jsr readkb
           rts
@@ -756,6 +783,7 @@ readk_tiledit
           lsr
           bcc readk_roomedit
           jsr movchrcr
+          jsr readchsetk
           rts
 
 readk_roomedit
@@ -882,68 +910,217 @@ readkmain_x
 readkb
           lda currkey
           rts
+
 ;------------------------------------
-readnumk
+; Read keys for views with character
+; selection from character groups. 
+; It should have been
+; already tested if there's no
+; keypress.
+;------------------------------------
+readchsetk
+
+          ; check first is shift key down
+          lda shflag
+          lsr
+          bcc readchsetk_1
+          jsr readchsetksh
+          rts
+
+readchsetk_1
+
           lda currkey
           ; key 1
           cmp #$38
-          bne readk2
+          bne readchsetk_2
           jsr tglchrst
-          jmp readknumx
+          jmp readchsetk_x
+
+readchsetk_2
 
           ; key 2
-readk2    cmp #$3b
-          bne readk3
+          cmp #$3b
+          bne readchsetk_3
           jsr incbgc0
-          jmp readknumx
+          jmp readchsetk_x
+
+readchsetk_3
 
           ; key 3 
-readk3    cmp #$08
-          bne readk4
+          cmp #$08
+          bne readchsetk_4
           jsr incbgc1
-          jmp readknumx
+          jmp readchsetk_x
+
+readchsetk_4
 
           ; key 4 
-readk4    cmp #$0b
-          bne readk5
+          cmp #$0b
+          bne readchsetk_x
           jsr incbgc2
-          jmp readknumx
 
+readchsetk_x
+
+          rts
+
+;------------------------------------
+; Read keys with shift key down 
+; for views with character
+; selection from character groups. 
+; It should have been
+; already tested if there's no
+; keypress and that shift key is pressed
+; down.
+;------------------------------------
+readchsetksh
+
+          lda currkey
+
+          ; key 1 - Background chars
+          cmp #$38
+          bne readchsetksh_2
+          lda #$01
+          inc $d020
+          jmp readchsetksh_s
+
+readchsetksh_2
+
+          ; key 2 - Floor chars
+          cmp #$3b
+          bne readchsetksh_3
+          lda #$02
+          jmp readchsetksh_s
+
+readchsetksh_3
+
+          ; key 3 - Wall chars
+          cmp #$08
+          bne readchsetksh_4
+          lda #$04
+          jmp readchsetksh_s
+
+readchsetksh_4
+
+          ; key 4 - Stair chars 
+          cmp #$0b
+          bne readchsetksh_5
+          lda #$08
+          jmp readchsetksh_s
+
+readchsetksh_5
+
+          ; Lethal chars
+
+          cmp #$10
+          bne readchsetksh_6
+          lda #$10
+          jmp readchsetksh_s
+
+readchsetksh_6
+
+          ; Elevator chars
+
+          cmp #$13
+          bne readchsetksh_7
+          lda #$20
+          jmp readchsetksh_s
+
+readchsetksh_7
+
+          ; Climbable chars
+
+          cmp #$18
+          bne readchsetksh_8
+          lda #$40
+          jmp readchsetksh_s
+
+readchsetksh_8
+
+          ; Collectible chars
+
+          cmp #$1b
+          bne readchsetksh_9
+          lda #$80
+          jmp readchsetksh_s
+
+readchsetksh_9
+
+          ; none yet
+
+          cmp #$20
+          bne readchsetksh_0
+          jmp readchsetksh_s
+
+readchsetksh_0
+
+          ; none yet
+
+          cmp #$23
+          bne readchsetksh_x
+
+readchsetksh_s
+
+          ; now set the selected character group(s)
+          ; only one group at once for now
+          sta chrgrps
+          jsr setchrgrps
+
+readchsetksh_x
+
+          rts
+
+;------------------------------------
+; Read character editor specific 
+; keypresses. It should have been
+; already tested if there's no
+; keypress.
+;------------------------------------
+readchredk
+          lda currkey
+          
           ; key 5
-readk5    cmp #$10
-          bne readk6
+          cmp #$10
+          bne readkchredk_6
           jsr incchcol
-          jmp readknumx
+          jmp readkchredk_x
 
           ; key 6 
           ; set multicolor bitpair 00
-readk6    cmp #$10
-          bne readk7
+readkchredk_6    
+          
+          cmp #$13
+          bne readkchredk_7
           jsr mcbitpair0
-          jmp readknumx
+          jmp readkchredk_x
 
           ; key 7 
           ; set multicolor bitpair 01
-readk7    cmp #$13
-          bne readk8
+readkchredk_7    
+
+          cmp #$18
+          bne readkchredk_8
           jsr mcbitpair1
-          jmp readknumx
+          jmp readkchredk_x
 
           ; key 8 
           ; set multicolor bitpair 10
-readk8    cmp #$18
-          bne readk9
+readkchredk_8    
+
+          cmp #$1b
+          bne readkchredk_9
           jsr mcbitpair2
-          jmp readknumx
+          jmp readkchredk_x
 
           ; key 9 
           ; set multicolor bitpair 11
-readk9    cmp #$1b
-          bne readknumx
-          jsr mcbitpair3
-          jmp readknumx
+readkchredk_9    
 
-readknumx
+          cmp #$20
+          bne readkchredk_x
+          jsr mcbitpair3
+          jmp readkchredk_x
+
+readkchredk_x
           rts
 ;------------------------------------
 incbgc0
@@ -1885,7 +2062,14 @@ paintile
           rts
 
 ;------------------------------------
-; toggle the character memory half being
+; Sets the selected character groups
+; to screen and work memory.
+;------------------------------------
+setchrgrps
+          ; TODO
+          rts
+;------------------------------------
+; Toggle the character memory half being
 ; edited to edit memory buffer          
 ;------------------------------------
 tgchedmem 
