@@ -2,7 +2,6 @@
 ; (C) Mikko Keinänen 2011
 ; 
 ; Instructions
-;
 ; 
 ; Main menu keys
 ; 1       : load data
@@ -93,7 +92,7 @@ ctmp                = $02a8
 
 ; bit 0:  0 first 1k of charset being edited
 ;         1 second 1k of charset being edited
-editstate            = $02a9
+; not used currently editstate            = $02a9
 
 ; current pixel in chr editor area
 currpx              = $02aa
@@ -183,8 +182,11 @@ chgrp_co2         = $02c8
 ; 8  |collectible 
 chrgrps = $02c9
 
+; numbers of characters in selected character group
+chgrpcnt = $02ca
+
 ; free memory:
-; $02ca-$02ff
+; $02cb-$02ff
 ; $0313
 ; $0337-$033b
 
@@ -249,21 +251,23 @@ tiledata3           = $2e00   ; ... $2eff
 tiledata4           = $2f00   ; ... $2fff
 
 ; character set store memory 
-; characters being edited are copied to work memory (half a set at time)
+; character group being edited or used for editing tiles
+; are copied to work memory 
 ; character data for characters 0-127
 chrdataed1          = $3000 ;... $33ff
 ; character data for characters 128-255 
-chrdataed2          = $3400 ;... $37ff
+; not used currently chrdataed2          = $3400 ;... $37ff
 chrdataed3          = $37ff ; character data ends
 
 ;-----------------------------------------------------------
-
 ; the standard character set is copied to $3800
 ; the editor ui will use the lower half of the character set
 chrdata1            = $3800 ;... $3bff
-; character set work memory: 
-; the half being edited from $3000-$37ff will be copied
-; to $3c00-$3fff 
+
+; character set work memory buffer: 
+; the character group being edited from $3000-$37ff 
+; will be copied to $3c00-$3fff (half a character set can
+; reside there at once)
 chrdata2            = $3c00 ;... $3fff
 ;-----------------------------------------------------------
 
@@ -435,6 +439,33 @@ infiniloop
           jmp infiniloop
           rts
 
+;------------------------------------
+; Adds with counter to tmpalo/-hi
+; Set the value for addition to accu.
+; Set to x how many times this value
+; should be added (multiplication).
+; x is restored to original value
+; before returning.
+;------------------------------------
+add2tmpa
+          stx btmp 
+          sta atmp
+          clc
+
+add2tmpa_lo
+          lda tmpalo
+          adc atmp 
+          sta tmpalo
+          lda tmpahi
+          adc #$00  ; add the possible counter
+          sta tmpahi
+          dex
+          bne add2tmpa_lo
+
+          ldx btmp
+          rts
+
+;------------------------------------
 ;------------------------------------
 ; blink the character selector cursor
 ;------------------------------------
@@ -614,6 +645,7 @@ mainmenu
           ror
           bcc mainmenu_cont
 
+          ; store character set being edited
           jsr stchedmem
 
 mainmenu_cont
@@ -643,7 +675,7 @@ inichared
           lda #$01
           sta prgstate
           lda #$00
-          sta editstate
+          ; not used currently sta editstate
           sta currpx
           sta crsrx
           sta crsry
@@ -651,16 +683,14 @@ inichared
           lda #$07
           sta crsrmax
           sta crsrmay
+
           lda #$01
           sta crsrstep
 
-          ; Set the index of current character
-          ; and minimum / maximum character index
-          lda #$80
-          sta minchind          ; show only half of char set at once
-          sta curchind
-          lda #$ff
-          sta maxchind
+          ; set up the character group
+          ; background character group is selected by default 
+          sta chrgrps 
+          jsr setchrgrps
 
           ; set the pointer to current character
           ; in the character memory top half
@@ -693,7 +723,8 @@ inichared
           lda #$09
           jsr setcolmem
 
-          ; load the half editable character set
+          ; copy the selected character group to work memory
+          ; (initially it is the first group)
           jsr cpchedmem
 
           jsr clearscr
@@ -725,7 +756,8 @@ initileed
 
           jsr setcolmem       
 
-          ; load the full editable character set
+          ; copy the selected character group to work memory 
+          ; (initially it is the first group)
           jsr cpchedmem
 
           jsr clearscr
@@ -827,7 +859,8 @@ readkf7   cmp #$03
           ;Q
 readkq    cmp #$3e
           bne readkz
-          jsr tgchedmem  
+          ; no need for this anymore : jsr tgchedmem  
+          ; TODO: something else? 
           jmp readkax
 
 readkz    ; Z (editor cursor left)
@@ -1488,47 +1521,6 @@ rendbytm5
 
           rts
 ;------------------------------------
-tglchrst  ; toggles character mode 
-          ; standard / multicolor
-
-          ; Set multicolor mode 
-          ; (bit 4 in vic control register)
-
-          lda vicctrlreg
-          eor #$10             ; 00010000
-          sta vicctrlreg
-
-          and #$10            ; 00010000
-          bne tglchrst1 
-
-          ; single color
-          ; cursor step is one
-          lda #$01
-          sta crsrstep
-          jmp tglchrst2 
-
-tglchrst1 ; multi color
-          ; cursor step is two
-          lda #$02
-          sta crsrstep 
-          ; restore character under cursor
-          jsr rstcrsr
-
-          ; reset cursor
-          lda #$00
-          sta crsrx
-          sta crsry
-
-          lda #<chedstart
-          sta tmpdlo
-          lda #>chedstart
-          sta tmpdhi
-
-          jsr shwcrsr
-          
-tglchrst2 jsr chredit
-          rts
-;------------------------------------
 ; load character set from disk
 ;------------------------------------
 ldchrset
@@ -1626,6 +1618,14 @@ svchrset  ; Save character set to disk.
           jsr $ffd8
 
           rts
+
+;------------------------------------
+;------------------------------------
+;---- CHARACTER SET AND COLOUR ------
+;--- MEMORY SPECIFIC SUBROUTINES ----
+;------------------------------------
+;------------------------------------
+
 ;------------------------------------
 initchrset
 
@@ -1674,6 +1674,50 @@ initchrset
          ;sta vicctrlreg
 
          rts
+
+;------------------------------------
+; toggles character mode 
+; standard / multicolor  
+;------------------------------------
+tglchrst  
+
+          ; Set multicolor mode 
+          ; (bit 4 in vic control register)
+
+          lda vicctrlreg
+          eor #$10             ; 00010000
+          sta vicctrlreg
+
+          and #$10            ; 00010000
+          bne tglchrst1 
+
+          ; single color
+          ; cursor step is one
+          lda #$01
+          sta crsrstep
+          jmp tglchrst2 
+
+tglchrst1 ; multi color
+          ; cursor step is two
+          lda #$02
+          sta crsrstep 
+          ; restore character under cursor
+          jsr rstcrsr
+
+          ; reset cursor
+          lda #$00
+          sta crsrx
+          sta crsry
+
+          lda #<chedstart
+          sta tmpdlo
+          lda #>chedstart
+          sta tmpdhi
+
+          jsr shwcrsr
+          
+tglchrst2 jsr chredit
+          rts
 
 ;------------------------------------
 ; fills the screen memory with space character
@@ -1768,6 +1812,9 @@ setcolmem_2
           rts
 
 ;------------------------------------
+; print the character sub set from
+; minchind to maxchind
+;------------------------------------
 prnchrset
 
           ; Set the start character regarding 
@@ -1781,45 +1828,50 @@ prnchrset_loop
           sta scrmemp1,x
           inx
           adc #$01
-          bne prnchrset_loop
+          cmp maxchind
+          ; exit loop when maxchind passed 
+          bcs prnchrset_x
+          jmp prnchrset_loop
+
+prnchrset_x
 
           rts
 
 ;------------------------------------
 ; prints the characters 128-255 
 ;------------------------------------
-prnchrs
-          ; set the start location in screen memory
+;prnchrs
+;         ; set the start location in screen memory
 
-          lda #<scrmemp1
-          sta tmpalo
-          lda #>scrmemp1
-          sta tmpahi
+;         lda #<scrmemp1
+;         sta tmpalo
+;         lda #>scrmemp1
+;         sta tmpahi
 
-          ; start from character 128
-          ldx #$80  ; 128
+;         ; start from character 128
+;         ldx #$80  ; 128
 
-prnchrs1
-          jsr prchrrw
+;prnchrs1
+;         jsr prchrrw
 
-          ; if .X is 0 all the chars have been 
-          ; printed
-          cpx #$00
-          beq prnchrsx
+;         ; if .X is 0 all the chars have been 
+;         ; printed
+;         cpx #$00
+;         beq prnchrsx
 
-          ; row of character is full
-          ; increment tmpalo/hi indirect
-          ; index pointer a row and print an empty row
-          jsr incrow
-          jsr emptyrw
-          jsr incrow
-          jmp prnchrs1
+;         ; row of character is full
+;         ; increment tmpalo/hi indirect
+;         ; index pointer a row and print an empty row
+;         jsr incrow
+;         jsr emptyrw
+;         jsr incrow
+;         jmp prnchrs1
 
-prnchrsx
-          rts
+;prnchrsx
+;         rts
 
 ;------------------------------------
-prchrrw
+; prchrrw
           ; prints a row of characters
           ; (row is 30 chars in this case)
           ; starting from value in .X
@@ -1836,43 +1888,43 @@ prchrrw
           ; value to be printed
           ; and .Y is set to 0
 
-          ldy #$00
-prchrrw1
-          txa
-          sta (tmpalo),y
-          iny
-          inx
-          beq prchrrwx
-          cpy #$1e  ; 30
-          bne prchrrw1
+;         ldy #$00
+;prchrrw1
+;         txa
+;         sta (tmpalo),y
+;         iny
+;         inx
+;         beq prchrrwx
+;         cpy #$1e  ; 30
+;         bne prchrrw1
 
-prchrrwx
-          ldy #$00
-          rts
+;prchrrwx
+;         ldy #$00
+;         rts
 ;------------------------------------
-emptyrw
-          ; prints a row of empty
-          ; characters
-          ; (row is 30 chars in this case)
-          ; starting from memory indexed indirectly using tmpalo/hi
+;emptyrw
+;         ; prints a row of empty
+;         ; characters
+;         ; (row is 30 chars in this case)
+;         ; starting from memory indexed indirectly using tmpalo/hi
 
-          ; store .Y to stack
-          tya
-          pha
+;         ; store .Y to stack
+;         tya
+;         pha
 
-          ldy #$00
-emptyrw1
-          lda #$20  ; empty space
-          sta (tmpalo),y
-          iny
-          cpy #$1e  ; 30 chars row here
-          bne emptyrw1 
+;         ldy #$00
+;emptyrw1
+;         lda #$20  ; empty space
+;         sta (tmpalo),y
+;         iny
+;         cpy #$1e  ; 30 chars row here
+;         bne emptyrw1 
 
-          ; restore .Y from stack
-          pla
-          tay
+;         ; restore .Y from stack
+;         pla
+;         tay
 
-          rts
+;         rts
 ;------------------------------------
 incrow
           ; tmpalo/hi points to screen
@@ -1891,42 +1943,574 @@ incrow
 ; prints the character set being used
 ; to the right side of screen
 ;------------------------------------
-printchs
-          ; prints the characters 128-255 
+;printchs
+;         ; prints the characters 128-255 
 
-          ; set the start location in screen memory
-          ; start from column 30 ($041d) and print 10
-          ; chars per row
+;         ; set the start location in screen memory
+;         ; start from column 30 ($041d) and print 10
+;         ; chars per row
 
-          lda #<scrmemitms
+;         lda #<scrmemitms
+;         sta tmpalo
+;         lda #>scrmemitms
+;         sta tmpahi
+
+;         ldy #$00
+;         ldx #$80
+;printchs1
+;         txa
+;         sta (tmpalo),y
+;         iny
+;         cpy #$0a
+;         bne printchs2 
+
+;         ; 10 columns done
+;         ldy #$00
+;         ; add a row to screen memory pointer
+;         clc 
+;         lda tmpalo
+;         adc #$28
+;         sta tmpalo
+;         lda tmpahi
+;         adc #$00
+;         sta tmpahi
+;         
+;printchs2 inx
+;         bne printchs1
+
+;         rts
+
+;------------------------------------
+; Set the character group settings.
+; Point tmpalo/-hi to the character
+; data store memory where the selected
+; character group starts from.
+; set the number of characters in 
+; selected character group to chgrpcnt 
+;------------------------------------
+setchrgrpsettings
+
+          ; set the tmpalo/-hi to the start of character
+          ; store memory
+          lda #<chrdataed1 
           sta tmpalo
-          lda #>scrmemitms
+          lda #>chrdataed1
           sta tmpahi
 
-          ldy #$00
-          ldx #$80
-printchs1
-          txa
-          sta (tmpalo),y
-          iny
-          cpy #$0a
-          bne printchs2 
+          lda chrgrps
+          lsr
+          bcc setchrgrps_fl
 
-          ; 10 columns done
-          ldy #$00
-          ; add a row to screen memory pointer
-          clc 
-          lda tmpalo
-          adc #$28
-          sta tmpalo
-          lda tmpahi
-          adc #$00
-          sta tmpahi
+          lda chgrp_bg2
+          sta chgrpcnt 
+
+          jmp setchrgrps_cnt
+
+setchrgrps_fl
+
+          ldx #$08 ; add 8 times, each character needs 8 bytes
+          lda chgrp_bg2
+          jsr add2tmpa
           
-printchs2 inx
-          bne printchs1
+          lsr
+          bcc setchrgrps_wl
+
+          lda chgrp_fl2
+          sta chgrpcnt 
+
+          jmp setchrgrps_cnt
+
+setchrgrps_wl
+
+          lda chgrp_fl2
+          jsr add2tmpa
+
+          lsr
+          bcc setchrgrps_sc
+
+          lda chgrp_wl2
+          sta chgrpcnt 
+
+          jmp setchrgrps_cnt
+
+setchrgrps_sc
+
+          lda chgrp_fl2
+          jsr add2tmpa
+
+          lsr
+          bcc setchrgrps_lh
+
+          lda chgrp_sc2
+          sta chgrpcnt 
+
+          jmp setchrgrps_cnt
+
+setchrgrps_lh
+
+          lda chgrp_sc2
+          jsr add2tmpa
+
+          lsr
+          bcc setchrgrps_ev
+
+          lda chgrp_lh2
+          sta chgrpcnt 
+
+          jmp setchrgrps_cnt
+
+setchrgrps_ev
+
+          lda chgrp_lh2
+          jsr add2tmpa
+
+          lsr
+          bcc setchrgrps_cl
+
+          lda chgrp_ev2
+          sta chgrpcnt 
+
+          jmp setchrgrps_cnt
+
+setchrgrps_cl
+
+          lda chgrp_ev2
+          jsr add2tmpa
+
+          lsr
+          bcc setchrgrps_co
+
+          lda chgrp_cl2
+          sta chgrpcnt 
+
+          jmp setchrgrps_cnt
+
+setchrgrps_co
+
+          lda chgrp_cl2
+          jsr add2tmpa
+
+          lsr
+          bcc setchrgrps_x
+
+          lda chgrp_co2
+          sta chgrpcnt 
+
+setchrgrps_cnt
+
 
           rts
+;------------------------------------
+; Sets the selected character groups
+; to screen and work memory.
+;------------------------------------
+setchrgrps
+          ; - check which bit is set
+          ;   in the setchrgrps
+          ; - we need to set two things
+          ;   while checking bits:
+          ;   - calculate the pointer
+          ;     to the start of character
+          ;     group data in the character
+          ;     set store memory 
+          ;   - set the minchind, maxchind,
+          ;     chgrpcnt and curchind accordingly
+          ;     (minchind and curchind is set always to #$80?)
+          ;     maxchind is always minchind + chrgrpcnt
+
+          jsr setchrgrpsettings
+
+          ; min character index starts from half the character set
+          ; the lower half is used for UI characters
+          ; and the character group being edited is assigned
+          ; to character values $80 and greater
+          lda #$80
+          sta minchind 
+          sta curchind
+
+          ; TODO
+          ; - copy character data to 
+          ;   work memory for the selected
+          ;   character group
+          ; - print the selected character
+          ;   group to screen 
+
+setchrgrps_x
+
+          rts
+;------------------------------------
+; Toggle the character memory half being
+; edited to edit memory buffer          
+;------------------------------------
+; deprecated
+;tgchedmem 
+;         ; store first the current half
+;         jsr stchedmem
+;         ; change the state
+;         lda editstate
+;         eor #$01
+;         sta editstate
+;         ; copy the other half to "work memory"
+;         jsr cpchedmem
+;         ; render the selected character to editor
+;         jsr chredit
+;         rts
+;------------------------------------
+;mvchredmem
+          ; Copies x pages of character memory 
+          ; to/from edit memory bank, where x is 
+          ; value stored in X-register.
+
+          ; The source memory is indexed indirectly
+          ; using zero page addresses tmpalo/-hi.
+
+          ; The target memory using tmpclo/-hi
+          ; set tmpalo/-hi and tmpclo/-hi using
+          ; cpchedmem when copying a character set half
+          ; for editing and
+          ; stchedmem when storing a character set half
+          ; being edited.
+
+          ; TODO: an error control if x is more than 8?
+          ; (8 pages is full character set)
+ 
+;         ldy #$00
+
+;mvchredmem1
+;         lda (tmpalo),y
+;         sta (tmpclo),y
+;         iny
+;         bne mvchredmem1
+;         ; y is now zero
+
+;         ; offset memory pointers tmpalo/-hi
+;         ; and tmpclo/-hi by one memory page
+;         ; (increase high-order byte by one)
+;         inc tmpahi
+;         inc tmpchi
+;         dex
+;         bne mvchredmem1 
+
+;         rts
+
+;------------------------------------
+; Copy the selected character group
+; to work memory
+;------------------------------------
+cpchedmem
+          ; TODO
+
+          rts
+
+;------------------------------------
+; Copies the full or half of the editable 
+; character set from chrdadaed1/2 to chrdata1/2.
+;
+; Note: we copy the whole set
+; in the tile and room editor screens
+;------------------------------------
+;cpchedmem
+
+          ; check first the program state
+          ; if tile editor or room editor
+          ; - copy the full set
+          ; - set the number of pages being copied in x to 8
+          ; if character editor 
+          ; - copy only half set
+          ; - check which half
+          ; - set the number of pages being copied in x to 4
+
+;         lda prgstate
+;         lsr          ; check the bit 0
+;         bcc cpchedmem_fullset
+
+;         ldx #$04 ; number of pages being copied (half character set)
+
+;         ; copy to chrdata2 (upper half of destination character set)
+;         lda #<chrdata2
+;         sta tmpclo
+;         lda #>chrdata2
+;         sta tmpchi
+
+;         ; Check the editstate, which half are
+;         ; we editing and set the source character
+;         ; memory pointer accordingly.
+
+;         lda editstate
+;         lsr       ; check the bit 0 
+;         bcc cpchedmem_cont1
+
+;cpchedmem1 
+;         ; set the source character memory pointer 
+;         ; to the half of character set (characters 128-255)
+
+;         lda #<chrdataed2
+;         sta tmpalo
+;         lda #>chrdataed2
+;         sta tmpahi
+;         jmp cpchedmem_cont2
+
+;cpchedmem_fullset
+
+;         ldx #$08          ; 8 pages is full set
+
+;         ; copy to chrdata1 (start of destination character set)
+;         lda #<chrdata1
+;         sta tmpclo
+;         lda #>chrdata1
+;         sta tmpchi
+
+;cpchedmem_cont1
+
+;         ; set the source character memory pointer 
+;         ; to the start of character set
+
+;         lda #<chrdataed1
+;         sta tmpalo
+;         lda #>chrdataed1
+;         sta tmpahi
+
+;cpchedmem_cont2
+
+;         jsr mvchredmem
+
+;         ; now, set the character colours
+;         jsr setchrcolrs
+
+;         rts
+
+;------------------------------------
+; sets the character colours for
+; full or half a character set 
+; being presented
+;------------------------------------
+;setchrcolrs
+
+;         ; copying will be done from end to beginning
+;         ; starting from character 255 or 127
+
+;         ldx #$00  ; "copy from"-index, default is start from end 
+;                   ; (decrement before use)
+;         ldy #$00  ; copy counter, default is full set (0), 
+;                   ; other choice would be half set (128)
+;                   ; (decrement before use)
+
+;         ; check the program state
+;         ; -> full or half set 
+;         lda prgstate
+;         lsr          ; check the bit 0
+;         bcc setchrcolrs_copy ; go with default values
+
+;         ldy #$80  ; copy colour values half set only 
+
+;         lda editstate
+;         lsr
+;         bcs setchrcolrs_copy
+
+;         ldx #$80   ; start from character colour 127 to 0
+
+;setchrcolrs_copy
+
+;         dey
+;         dex
+
+;setchrcolrs_loop
+
+;         lda chrcolors,x 
+;         sta colmemp1,y
+;         dex
+;         dey 
+;         bne setchrcolrs_loop
+
+;         rts
+
+;------------------------------------
+; Store the character set being edited
+; from "work memory" to "store memory".
+;------------------------------------
+stchedmem
+
+          rts
+
+;------------------------------------
+; stores the half of character set being
+; edited from chrdata2 to chrdadaed1/2
+; stores also the character color values
+; to chrcolors
+;------------------------------------
+;stchedmem
+
+;         ; check the program state, which half are
+;         ; we editing
+;         lda editstate
+;         lsr       ; check the bit 0 
+;         bcs stchedmem1 
+;         ; set pointer to memory for characters 0-127
+;         lda #<chrdataed1
+;         sta tmpclo
+;         lda #>chrdataed1
+;         sta tmpchi
+;         jmp stchedmem2
+;stchedmem1 
+;         ; ... characters 128-255
+;         lda #<chrdataed2
+;         sta tmpclo
+;         lda #>chrdataed2
+;         sta tmpchi
+;stchedmem2
+
+;         ; copy to chrdata2
+;         lda #<chrdata2
+;         sta tmpalo
+;         lda #>chrdata2
+;         sta tmpahi
+
+;         ldx #$04 ; number of pages being copied (half character set)
+;         jsr mvchredmem
+
+;         ; now store the character color values to memory starting from 
+;         ; chrcolors,x where x is either 0 or 128 regarding to the half 
+;         ; of character set being edited.
+
+;         ldy #$00 ; by default copy colours for first char set half 
+;         ldx #$00  
+
+;         lda editstate
+;         lsr       ; check the bit 0 
+;         bcc stchedmem_cpycolrs
+
+;         ldy #$80  ; copy colours for second char set half
+
+;stchedmem_cpycolrs
+
+;         lda colmemp1,x
+;         sta chrcolors,y
+;         iny
+;         inx
+
+;         cpx #$80 ; copy colour values from first 128 colour memory locations
+;         bne stchedmem_cpycolrs
+
+;         rts
+
+;------------------------------------
+; dumps standard character set from 
+; character generator ROM to 
+; RAM (chrdata1) for editing
+; input:
+; point the target memory
+; using tmpclo/-hi
+;------------------------------------
+dmpstdch 
+          ; turn off interrupts
+          sei
+
+          ; switch out I/O registers and switch
+          ; in character memory to $d000
+          lda $01
+          and #$fb            ; 11111011
+          sta $01
+
+          ; location of character rom
+          lda #<chrrom
+          sta tmpalo
+          lda #>chrrom
+          sta tmpahi
+
+          ; character memory is now in $d000-$dfff
+          ; dump the character memory
+          ldx #$08  ; go through 8 pages of memory
+          ldy #$00
+
+dmpstdch1
+          lda (tmpalo),y
+          sta (tmpclo),y
+          iny
+          bne dmpstdch1
+          ;ldy #$00 ; this is alredy 00
+
+          ; offset memory pointers tmpalo/-hi, tmpblo/-hi
+          ; and tmpclo/-hi by one memory page
+          ; (increase high-order byte by one)
+          inc tmpahi
+          inc tmpchi
+          dex
+          bne dmpstdch1
+
+          ; switch I/O registers back to $d000 
+          ; and character rom out
+          lda $01
+          ora #$04  ; 00000100
+          sta $01
+
+          ; switch back interrupts and return
+          cli 
+          rts
+
+;------------------------------------
+chm2colm
+          ; This routine sets pointer to color
+          ; memory. Zero page adresses 
+          ; tmpalo/-hi must contain
+          ; location in screen memory.
+
+          ; note this routine is same as in main game source GETCOLM
+          ; TODO: separate common subroutines to one source file
+          ;       and unify the variable names
+
+          ; Color memory pointer is set to
+          ; zero page adresses tmpclo/-hi.
+          
+          ; Screen memory location pointer 
+          ; values tmpalo/-hi are added with 
+          ; $d400 and sum is stored to 
+          ; tmpclo/-hi as screen colour 
+          ; memory pointers. These pointers 
+          ; are used to set colour value
+          ; to right location in screen.
+
+          ; load screen memory pointer low byte 
+          ; and store to color memory pointer low byte
+          lda tmpalo ; same as SCRLO in game         
+          sta tmpclo ; same as LOTMP in game 
+
+          ; load screen memory pointer high byte
+          ; add #$d4 to it and store to color memory
+          ; pointer high byte
+
+          ; NOTE: since the low byte is of the memory
+          ; offset value is #$00 there's no need to use
+          ; the calculation of lowbyte. Otherwise an addition
+          ; using carry would be needed:
+
+          ; clc ; clear carry
+          ; lda tmpalo        ; scrlo in game
+          ; adc somevalue ; add with carry
+          ; sta tmpclo        ; lotmp in game
+          ; lda tmpahi        ; scrhi in game
+          ; adc anothervalue ; add with carry
+          ; sta tmpchi        ; hitmp in game
+
+          clc
+          lda tmpahi ; same as SCRHI in game
+          adc #$d4
+          sta tmpchi ; same as HITMP in game 
+          rts
+
+;------------------------------------
+;------------------------------------
+;---- CHARACTER SET AND COLOUR ------
+;--- MEMORY SPECIFIC SUBROUTINES ----
+;--------------- END ----------------
+;------------------------------------
+;------------------------------------
+
+;------------------------------------
+;------------------------------------
+;-------- TILE SET SPECIFIC ---------
+;----------- SUBROUTINES ------------
+;------------------------------------
+;------------------------------------
 
 ;------------------------------------
 ; Print 4x4 character graphics tiles 
@@ -2062,352 +2646,17 @@ paintile
           rts
 
 ;------------------------------------
-; Sets the selected character groups
-; to screen and work memory.
 ;------------------------------------
-setchrgrps
-          ; TODO
-          rts
+;-------- TILE SET SPECIFIC ---------
+;----------- SUBROUTINES ------------
+;--------------- END ----------------
 ;------------------------------------
-; Toggle the character memory half being
-; edited to edit memory buffer          
 ;------------------------------------
-tgchedmem 
-          ; store first the current half
-          jsr stchedmem
-          ; change the state
-          lda editstate
-          eor #$01
-          sta editstate
-          ; copy the other half to "work memory"
-          jsr cpchedmem
-          ; render the selected character to editor
-          jsr chredit
-          rts
-;------------------------------------
-mvchredmem
-          ; Copies x pages of character memory 
-          ; to/from edit memory bank, where x is 
-          ; value stored in X-register.
 
-          ; The source memory is indexed indirectly
-          ; using zero page addresses tmpalo/-hi.
 
-          ; The target memory using tmpclo/-hi
-          ; set tmpalo/-hi and tmpclo/-hi using
-          ; cpchedmem when copying a character set half
-          ; for editing and
-          ; stchedmem when storing a character set half
-          ; being edited.
 
-          ; TODO: an error control if x is more than 8?
-          ; (8 pages is full character set)
- 
-          ldy #$00
 
-mvchredmem1
-          lda (tmpalo),y
-          sta (tmpclo),y
-          iny
-          bne mvchredmem1
-          ; y is now zero
 
-          ; offset memory pointers tmpalo/-hi
-          ; and tmpclo/-hi by one memory page
-          ; (increase high-order byte by one)
-          inc tmpahi
-          inc tmpchi
-          dex
-          bne mvchredmem1 
-
-          rts
-
-;------------------------------------
-; Copies the full or half of the editable 
-; character set from chrdadaed1/2 to chrdata1/2.
-;
-; Note: we copy the whole set
-; in the tile and room editor screens
-;------------------------------------
-cpchedmem
-
-          ; check first the program state
-          ; if tile editor or room editor
-          ; - copy the full set
-          ; - set the number of pages being copied in x to 8
-          ; if character editor 
-          ; - copy only half set
-          ; - check which half
-          ; - set the number of pages being copied in x to 4
-
-          lda prgstate
-          lsr          ; check the bit 0
-          bcc cpchedmem_fullset
-
-          ldx #$04 ; number of pages being copied (half character set)
-
-          ; copy to chrdata2 (upper half of destination character set)
-          lda #<chrdata2
-          sta tmpclo
-          lda #>chrdata2
-          sta tmpchi
-
-          ; Check the editstate, which half are
-          ; we editing and set the source character
-          ; memory pointer accordingly.
-
-          lda editstate
-          lsr       ; check the bit 0 
-          bcc cpchedmem_cont1
-
-cpchedmem1 
-          ; set the source character memory pointer 
-          ; to the half of character set (characters 128-255)
-
-          lda #<chrdataed2
-          sta tmpalo
-          lda #>chrdataed2
-          sta tmpahi
-          jmp cpchedmem_cont2
-
-cpchedmem_fullset
-
-          ldx #$08          ; 8 pages is full set
-
-          ; copy to chrdata1 (start of destination character set)
-          lda #<chrdata1
-          sta tmpclo
-          lda #>chrdata1
-          sta tmpchi
-
-cpchedmem_cont1
-
-          ; set the source character memory pointer 
-          ; to the start of character set
-
-          lda #<chrdataed1
-          sta tmpalo
-          lda #>chrdataed1
-          sta tmpahi
-
-cpchedmem_cont2
-
-          jsr mvchredmem
-
-          ; now, set the character colours
-          jsr setchrcolrs
-
-          rts
-
-;------------------------------------
-; sets the character colours for
-; full or half a character set 
-; being presented
-;------------------------------------
-setchrcolrs
-
-          ; copying will be done from end to beginning
-          ; starting from character 255 or 127
-
-          ldx #$00  ; "copy from"-index, default is start from end 
-                    ; (decrement before use)
-          ldy #$00  ; copy counter, default is full set (0), 
-                    ; other choice would be half set (128)
-                    ; (decrement before use)
-
-          ; check the program state
-          ; -> full or half set 
-          lda prgstate
-          lsr          ; check the bit 0
-          bcc setchrcolrs_copy ; go with default values
-
-          ldy #$80  ; copy colour values half set only 
-
-          lda editstate
-          lsr
-          bcs setchrcolrs_copy
-
-          ldx #$80   ; start from character colour 127 to 0
-
-setchrcolrs_copy
-
-          dey
-          dex
-
-setchrcolrs_loop
-
-          lda chrcolors,x 
-          sta colmemp1,y
-          dex
-          dey 
-          bne setchrcolrs_loop
-
-          rts
-
-;------------------------------------
-; stores the half of character set being
-; edited from chrdata2 to chrdadaed1/2
-; stores also the character color values
-; to chrcolors
-;------------------------------------
-stchedmem
-
-          ; check the program state, which half are
-          ; we editing
-          lda editstate
-          lsr       ; check the bit 0 
-          bcs stchedmem1 
-          ; set pointer to memory for characters 0-127
-          lda #<chrdataed1
-          sta tmpclo
-          lda #>chrdataed1
-          sta tmpchi
-          jmp stchedmem2
-stchedmem1 
-          ; ... characters 128-255
-          lda #<chrdataed2
-          sta tmpclo
-          lda #>chrdataed2
-          sta tmpchi
-stchedmem2
-
-          ; copy to chrdata2
-          lda #<chrdata2
-          sta tmpalo
-          lda #>chrdata2
-          sta tmpahi
-
-          ldx #$04 ; number of pages being copied (half character set)
-          jsr mvchredmem
-
-          ; now store the character color values to memory starting from 
-          ; chrcolors,x where x is either 0 or 128 regarding to the half 
-          ; of character set being edited.
-
-          ldy #$00 ; by default copy colours for first char set half 
-          ldx #$00  
-
-          lda editstate
-          lsr       ; check the bit 0 
-          bcc stchedmem_cpycolrs
-
-          ldy #$80  ; copy colours for second char set half
-
-stchedmem_cpycolrs
-
-          lda colmemp1,x
-          sta chrcolors,y
-          iny
-          inx
-
-          cpx #$80 ; copy colour values from first 128 colour memory locations
-          bne stchedmem_cpycolrs
-
-          rts
-
-;------------------------------------
-; dumps standard character set from 
-; character generator ROM to 
-; RAM (chrdata1) for editing
-; input:
-; point the target memory
-; using tmpclo/-hi
-;------------------------------------
-dmpstdch 
-          ; turn off interrupts
-          sei
-
-          ; switch out I/O registers and switch
-          ; in character memory to $d000
-          lda $01
-          and #$fb            ; 11111011
-          sta $01
-
-          ; location of character rom
-          lda #<chrrom
-          sta tmpalo
-          lda #>chrrom
-          sta tmpahi
-
-          ; character memory is now in $d000-$dfff
-          ; dump the character memory
-          ldx #$08  ; go through 8 pages of memory
-          ldy #$00
-
-dmpstdch1
-          lda (tmpalo),y
-          sta (tmpclo),y
-          iny
-          bne dmpstdch1
-          ;ldy #$00 ; this is alredy 00
-
-          ; offset memory pointers tmpalo/-hi, tmpblo/-hi
-          ; and tmpclo/-hi by one memory page
-          ; (increase high-order byte by one)
-          inc tmpahi
-          inc tmpchi
-          dex
-          bne dmpstdch1
-
-          ; switch I/O registers back to $d000 
-          ; and character rom out
-          lda $01
-          ora #$04  ; 00000100
-          sta $01
-
-          ; switch back interrupts and return
-          cli 
-          rts
-
-;------------------------------------
-chm2colm
-          ; This routine sets pointer to color
-          ; memory. Zero page adresses 
-          ; tmpalo/-hi must contain
-          ; location in screen memory.
-
-          ; note this routine is same as in main game source GETCOLM
-          ; TODO: separate common subroutines to one source file
-          ;       and unify the variable names
-
-          ; Color memory pointer is set to
-          ; zero page adresses tmpclo/-hi.
-          
-          ; Screen memory location pointer 
-          ; values tmpalo/-hi are added with 
-          ; $d400 and sum is stored to 
-          ; tmpclo/-hi as screen colour 
-          ; memory pointers. These pointers 
-          ; are used to set colour value
-          ; to right location in screen.
-
-          ; load screen memory pointer low byte 
-          ; and store to color memory pointer low byte
-          lda tmpalo ; same as SCRLO in game         
-          sta tmpclo ; same as LOTMP in game 
-
-          ; load screen memory pointer high byte
-          ; add #$d4 to it and store to color memory
-          ; pointer high byte
-
-          ; NOTE: since the low byte is of the memory
-          ; offset value is #$00 there's no need to use
-          ; the calculation of lowbyte. Otherwise an addition
-          ; using carry would be needed:
-
-          ; clc ; clear carry
-          ; lda tmpalo        ; scrlo in game
-          ; adc somevalue ; add with carry
-          ; sta tmpclo        ; lotmp in game
-          ; lda tmpahi        ; scrhi in game
-          ; adc anothervalue ; add with carry
-          ; sta tmpchi        ; hitmp in game
-
-          clc
-          lda tmpahi ; same as SCRHI in game
-          adc #$d4
-          sta tmpchi ; same as HITMP in game 
-          rts
 ;------------------------------------
 mvlft     
           ; move editor cursor to left
