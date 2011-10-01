@@ -237,38 +237,22 @@ chedstart           = $06c8
 ; at once.  
 
 ; store character colour values to one page in memory in
-chrcolors           = $2b00 ; (11008) ... ends in $2bff
+chrcolors           = $3300 ; (11008) ... ends in $33ff
 
-; Tile data is stored from $2c00 to $2fff (4 pages of memory)
+; Tile data is stored from $3400 to $37ff (4 pages of memory)
 ; Each tile consists of 4 characters (2 x 2).
 ; The first character of a tile x is in tiledata1,x, 
 ; 2nd character in tiledata2,x, etc.
 ; This means that we have 255 tiles.
 
-tiledata1           = $2c00   ; ... $2cff
-tiledata2           = $2d00   ; ... $2dff
-tiledata3           = $2e00   ; ... $2eff
-tiledata4           = $2f00   ; ... $2fff
+tiledata1           = $3400   ; ... $34ff
+tiledata2           = $3500   ; ... $35ff
+tiledata3           = $3600   ; ... $36ff
+tiledata4           = $3700   ; ... $37ff
 
-; character set store memory 
-; character group being edited or used for editing tiles
-; are copied to work memory 
-; character data for characters 0-127
-chrdataed1          = $3000 ;... $33ff
-; character data for characters 128-255 
-; not used currently chrdataed2          = $3400 ;... $37ff
-chrdataed3          = $37ff ; character data ends
-
-;-----------------------------------------------------------
-; the standard character set is copied to $3800
-; the editor ui will use the lower half of the character set
+; the character set is located to memory $3800...$3fff
 chrdata1            = $3800 ;... $3bff
-
-; character set work memory buffer: 
-; the character group being edited from $3000-$37ff 
-; will be copied to $3c00-$3fff (half a character set can
-; reside there at once)
-chrdata2            = $3c00 ;... $3fff
+chrdata2            = $3fff
 ;-----------------------------------------------------------
 
 prgdata             = $8000 ; ...
@@ -362,8 +346,6 @@ bgcolor2            = $d023
 ;   toggle the character memory half being
 ; mvchredmem
 ;   copies 1k of character memory being edited to/from edit memory bank
-; cpchedmem
-;   copies the half of character set being edited from chrdadaed1/2 to chrdata2
 ; stchedmem
 ;   stores the half of character set being edited from chrdata2 to chrdadaed1/2
 ; dmpstdch
@@ -419,14 +401,19 @@ mainloop
           jmp mainloop 
 ;------------------------------------
 init
-          ; dump the standard character set from rom to ram to editable set
 
-          ; location of character set being edited
-          lda #<chrdataed1
+          ; load the standard character set
+          ; to location of characters used in screen
+          ; this is done only once, after starting
+          ; the program and before loading character
+          ; set from disk
+
+          lda #<chrdata1
           sta tmpclo
-          lda #>chrdataed1
+          lda #>chrdata1
           sta tmpchi
-          jsr dmpstdch
+          ; dump the standard character set from rom to ram
+          jsr dmpstdch 
 
           jsr initchrset
           lda #$00
@@ -439,6 +426,42 @@ infiniloop
           jmp infiniloop
           rts
 
+;------------------------------------
+; divide
+;
+; input:
+; accu contains the divident
+; atmp contains the divider
+;
+; output:
+; x will contain the result
+; y will contain the remainder
+; accu contains the original divident 
+;------------------------------------
+divide
+          ; store accu
+          sta btmp
+
+          ldx #$00
+
+          ; set the c-flag
+          sec
+
+divide_loop
+          inx
+          tay                 ; store possible remainder to y
+          sbc atmp            ; subract divider
+          beq divide_done     ; no remainder
+          bcs divide_loop     ; c flag not cleared, continue
+          ; since there was a remainder, decrease x
+          ; y contains remainder
+          dex
+
+divide_done
+
+          ; restore accu
+          lda atmp
+          rts
 ;------------------------------------
 ; Adds with counter to tmpalo/-hi
 ; Set the value for addition to accu.
@@ -650,15 +673,6 @@ mainmenu
 
 mainmenu_cont
           
-          ; restore the standard character set
-          ; to location of characters used in screen
-
-          lda #<chrdata1
-          sta tmpclo
-          lda #>chrdata1
-          sta tmpchi
-          jsr dmpstdch 
-
           lda #$00
           sta prgstate
           jsr clearscr
@@ -723,10 +737,6 @@ inichared
           lda #$09
           jsr setcolmem
 
-          ; copy the selected character group to work memory
-          ; (initially it is the first group)
-          jsr cpchedmem
-
           jsr clearscr
           jsr prnchrset
           jsr chredit
@@ -741,7 +751,7 @@ initileed
           sta prgstate
 
           lda #$00
-          sta minchind          ; show the whole character set at once
+          sta minchind
           sta curchind
           lda #$ff
           sta maxchind
@@ -755,10 +765,6 @@ initileed
           sta tmpbhi
 
           jsr setcolmem       
-
-          ; copy the selected character group to work memory 
-          ; (initially it is the first group)
-          jsr cpchedmem
 
           jsr clearscr
           jsr prntiles
@@ -1606,8 +1612,8 @@ svchrset  ; Save character set to disk.
 
           ; set data end address
 
-          ldx #<chrdataed3
-          ldy #>chrdataed3
+          ldx #<chrdata2
+          ldy #>chrdata2
 
           ; set data start pointer
           ; low byte to accu
@@ -1659,20 +1665,12 @@ initchrset
 ; 110 $3000-$37ff
 ; 111 $3800-$3fff
 
-          lda vicmemctrlreg
-          ora #$0e            ; 00001110 sets the location
-                              ; of character memory to $3800-$3fff
-                              ; the character set is loaded from
-                              ; file in ldchrset to this area
-          sta vicmemctrlreg
-
-         ; Set multicolor mode 
-         ; (4th bit in vic control register)
-
-         ;lda vicctrlreg
-         ;ora #$10             ; 00010000
-         ;sta vicctrlreg
-
+         lda vicmemctrlreg
+         ora #$0e            ; 00001110 sets the location
+                             ; of character memory to $3800-$3fff
+                             ; the character set is loaded from
+                             ; file in ldchrset to this area
+         sta vicmemctrlreg
          rts
 
 ;------------------------------------
@@ -1990,12 +1988,23 @@ incrow
 ;------------------------------------
 setchrgrpsettings
 
+          ; - check which bit is set
+          ;   in the setchrgrps
+          ; - calculate the pointer
+          ;   to the start of character
+          ;   group data in the character
+          ;   set store memory 
+          ; - set the minchind, maxchind,
+          ;   chgrpcnt and curchind accordingly
+          ;   (minchind and curchind is set always to #$80?)
+          ;   maxchind is always minchind + chrgrpcnt
+
           ; set the tmpalo/-hi to the start of character
           ; store memory
-          lda #<chrdataed1 
-          sta tmpalo
-          lda #>chrdataed1
-          sta tmpahi
+          ;lda #<chrdataed1 
+          ;sta tmpalo
+          ;lda #>chrdataed1
+          ;sta tmpahi
 
           lda chrgrps
           lsr
@@ -2105,20 +2114,19 @@ setchrgrps_cnt
 ; to screen and work memory.
 ;------------------------------------
 setchrgrps
-          ; - check which bit is set
-          ;   in the setchrgrps
-          ; - we need to set two things
-          ;   while checking bits:
-          ;   - calculate the pointer
-          ;     to the start of character
-          ;     group data in the character
-          ;     set store memory 
-          ;   - set the minchind, maxchind,
-          ;     chgrpcnt and curchind accordingly
-          ;     (minchind and curchind is set always to #$80?)
-          ;     maxchind is always minchind + chrgrpcnt
 
+          ; Set tmpalo/-hi to point to start of the memory
+          ; that will be copied (source memory) 
+          ; chgrpcnt will contain the number of characters
+          ; that will be copied.
           jsr setchrgrpsettings
+
+          ; Set tmpclo/-hi to point in the target memory
+          ; (character editor work memory)
+          lda #<chrdata2
+          sta tmpclo
+          lda #>chrdata2
+          sta tmpchi 
 
           ; min character index starts from half the character set
           ; the lower half is used for UI characters
@@ -2128,15 +2136,34 @@ setchrgrps
           sta minchind 
           sta curchind
 
-          ; TODO
-          ; - copy character data to 
-          ;   work memory for the selected
-          ;   character group
           ; - print the selected character
           ;   group to screen 
 
 setchrgrps_x
 
+          rts
+
+;------------------------------------
+; copy memory.
+; source memory is pointed with 
+; tmpalo/-hi
+; target memory is pointed with 
+; tmpclo/-hi
+; x contains number of bytes that
+; will be copied
+;------------------------------------
+memcpybytes
+          rts
+;------------------------------------
+; copy memory.
+; source memory is pointed with 
+; tmpalo/-hi
+; target memory is pointed with 
+; tmpclo/-hi
+; x contains number of pages that
+; will be copied
+;------------------------------------
+memcpypages
           rts
 ;------------------------------------
 ; Toggle the character memory half being
@@ -2192,15 +2219,6 @@ setchrgrps_x
 ;         bne mvchredmem1 
 
 ;         rts
-
-;------------------------------------
-; Copy the selected character group
-; to work memory
-;------------------------------------
-cpchedmem
-          ; TODO
-
-          rts
 
 ;------------------------------------
 ; Copies the full or half of the editable 
