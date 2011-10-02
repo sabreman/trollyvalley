@@ -90,9 +90,8 @@ shflag              = $028d
 btmp                = $02a7
 ctmp                = $02a8
 
-; bit 0:  0 first 1k of charset being edited
-;         1 second 1k of charset being edited
-; not used currently editstate            = $02a9
+; number of character groups
+nochrgrps           = $02a9
 
 ; current pixel in chr editor area
 currpx              = $02aa
@@ -144,30 +143,38 @@ pscount = $02b8
 ;       at once.
 ; the character group specs (11 bytes)
 ; byte no:          description:
-chgrp_bg1         = $02b9   ; 1st background char value
-                            ; (also text numbers etc.
-                            ; characters that are not interacted in game world
-                            ; but can be used as background characters)
-                            ; characters values from $00...$39 58 chars
-chgrp_bg2         = $02ba   ; no of background chars
-chgrp_fl1         = $02bb   ; 1st floor char
-chgrp_fl2         = $02bc   ; no of floor chars
-chgrp_wl1         = $02bd   ; 1st wall char
-chgrp_wl2         = $02be   ; no of wall chars
-chgrp_sc1         = $02bf   ; 1st stair char
-chgrp_sc2         = $02c0   ; no of stair chars
-chgrp_lh1         = $02c1   ; 1st lethal char
-chgrp_lh2         = $02c2   ; no of lethal chars
-chgrp_ev1         = $02c3   ; elevator 
-chgrp_ev2         = $02c4
-chgrp_cl1         = $02c5   ; climbable (ladder etc)
-chgrp_cl2         = $02c6
-chgrp_co1         = $02c7   ; collectible
-chgrp_co2         = $02c8
+;chgrp_bg1         = $02b9   ; 1st background char value
+                             ; (also text numbers etc.
+                             ; characters that are not interacted in game world
+                             ; but can be used as background characters)
+                             ; characters values from $00...$39 58 chars
+;chgrp_bg2         = $02ba   ; no of background chars
+;chgrp_fl1         = $02bb   ; 1st floor char
+;chgrp_fl2         = $02bc   ; no of floor chars
+;chgrp_wl1         = $02bd   ; 1st wall char
+;chgrp_wl2         = $02be   ; no of wall chars
+;chgrp_sc1         = $02bf   ; 1st stair char
+;chgrp_sc2         = $02c0   ; no of stair chars
+;chgrp_lh1         = $02c1   ; 1st lethal char
+;chgrp_lh2         = $02c2   ; no of lethal chars
+;chgrp_ev1         = $02c3   ; elevator 
+;chgrp_ev2         = $02c4
+;chgrp_cl1         = $02c5   ; climbable (ladder etc)
+;chgrp_cl2         = $02c6
+;chgrp_co1         = $02c7   ; collectible
+;chgrp_co2         = $02c8
 
 ; collision can be then simply tested e.g. 
 ; if character values is >= chgrp_fl1 and character value is < chgrp_wl1 
 ; it is a floor character and it cannot be fallen through. 
+
+; Default values for these are read from data tables.
+; However these values will be saved and loaded togerher with character data.
+
+; start of each character group (8 bytes, $02ba...$02c1)
+chrgrpsta           = $02ba
+; legth of each chracter group ($02c2...$02c8)
+chrgrplen           = $02c2
 
 ; selected character group(s)
 ; bit|show chargroup
@@ -330,12 +337,6 @@ bgcolor2            = $d023
 ;   Initialize character set
 ; clearscr 
 ;   fill screen memory with empty space characters
-; prnchrs
-;   prints the characters 128-255
-; printchs
-;   prints the characters 128-255 to the right side of screen
-; prchrrw
-;   prints a row of characters
 ; incrow
 ;   increase row in screen memory
 ; prntiles
@@ -401,6 +402,21 @@ mainloop
           jmp mainloop 
 ;------------------------------------
 init
+          ; load the initial character group data
+          ; (this will be replace from file when
+          ;  data is loaded)
+          lda #$08
+          sta nochrgrps 
+          ldx nochrgrps
+
+init_loop
+
+          lda dchrgrpstart,x
+          sta chrgrpsta,x
+          lda dchrgrplen,x
+          sta chrgrplen,x
+          dex
+          bne init_loop
 
           ; load the standard character set
           ; to location of characters used in screen
@@ -439,6 +455,7 @@ infiniloop
 ; accu contains the original divident 
 ;------------------------------------
 divide
+
           ; store accu
           sta btmp
 
@@ -448,6 +465,7 @@ divide
           sec
 
 divide_loop
+
           inx
           tay                 ; store possible remainder to y
           sbc atmp            ; subract divider
@@ -465,30 +483,31 @@ divide_done
 ;------------------------------------
 ; Adds with counter to tmpalo/-hi
 ; Set the value for addition to accu.
-; Set to x how many times this value
+; Set to y how many times this value
 ; should be added (multiplication).
-; x is restored to original value
-; before returning.
+; accu and y-register is restored 
+; to original value before returning.
 ;------------------------------------
-add2tmpa
-          stx btmp 
+add2tmpb
+          sty btmp 
           sta atmp
+
+add2tmpb_lo
+
           clc
-
-add2tmpa_lo
-          lda tmpalo
+          lda tmpblo
           adc atmp 
-          sta tmpalo
-          lda tmpahi
+          sta tmpblo
+          lda tmpbhi
           adc #$00  ; add the possible counter
-          sta tmpahi
-          dex
-          bne add2tmpa_lo
-
-          ldx btmp
+          sta tmpbhi
+          dey
+          bne add2tmpb_lo
+          
+          lda atmp
+          ldy btmp
           rts
 
-;------------------------------------
 ;------------------------------------
 ; blink the character selector cursor
 ;------------------------------------
@@ -689,7 +708,6 @@ inichared
           lda #$01
           sta prgstate
           lda #$00
-          ; not used currently sta editstate
           sta currpx
           sta crsrx
           sta crsry
@@ -704,15 +722,7 @@ inichared
           ; set up the character group
           ; background character group is selected by default 
           sta chrgrps 
-          jsr setchrgrps
-
-          ; set the pointer to current character
-          ; in the character memory top half
-          ; where editable character set is loaded to
-          lda #<chrdata2
-          sta tmpblo 
-          lda #>chrdata2
-          sta tmpbhi
+          jsr setchrgrp
 
           ; set the pointer to current pixel
           ; in the editor area
@@ -720,18 +730,6 @@ inichared
           sta tmpdlo
           lda #>chedstart
           sta tmpdhi
-
-          ; restore the standard character set
-          ; to location of characters used in screen
-          ; (we need to do this here since the whole 
-          ; UI character set is overwritten in tile and 
-          ; room editor modes)
-
-          lda #<chrdata1
-          sta tmpclo
-          lda #>chrdata1
-          sta tmpchi
-          jsr dmpstdch 
 
           ; set the colour memory
           lda #$09
@@ -1102,7 +1100,7 @@ readchsetksh_s
           ; now set the selected character group(s)
           ; only one group at once for now
           sta chrgrps
-          jsr setchrgrps
+          jsr setchrgrp
 
 readchsetksh_x
 
@@ -1826,7 +1824,7 @@ prnchrset_loop
           sta scrmemp1,x
           inx
           adc #$01
-          cmp maxchind
+          cpx maxchind
           ; exit loop when maxchind passed 
           bcs prnchrset_x
           jmp prnchrset_loop
@@ -1835,94 +1833,6 @@ prnchrset_x
 
           rts
 
-;------------------------------------
-; prints the characters 128-255 
-;------------------------------------
-;prnchrs
-;         ; set the start location in screen memory
-
-;         lda #<scrmemp1
-;         sta tmpalo
-;         lda #>scrmemp1
-;         sta tmpahi
-
-;         ; start from character 128
-;         ldx #$80  ; 128
-
-;prnchrs1
-;         jsr prchrrw
-
-;         ; if .X is 0 all the chars have been 
-;         ; printed
-;         cpx #$00
-;         beq prnchrsx
-
-;         ; row of character is full
-;         ; increment tmpalo/hi indirect
-;         ; index pointer a row and print an empty row
-;         jsr incrow
-;         jsr emptyrw
-;         jsr incrow
-;         jmp prnchrs1
-
-;prnchrsx
-;         rts
-
-;------------------------------------
-; prchrrw
-          ; prints a row of characters
-          ; (row is 30 chars in this case)
-          ; starting from value in .X
-          ; if .X overflows or 30 chars
-          ; has been printed the routine
-          ; returns
-
-          ; tmpalo/hi is used for 
-          ; indirect indexing of screen 
-          ; memory
-
-          ; after returning the .X
-          ; will contain the value of next
-          ; value to be printed
-          ; and .Y is set to 0
-
-;         ldy #$00
-;prchrrw1
-;         txa
-;         sta (tmpalo),y
-;         iny
-;         inx
-;         beq prchrrwx
-;         cpy #$1e  ; 30
-;         bne prchrrw1
-
-;prchrrwx
-;         ldy #$00
-;         rts
-;------------------------------------
-;emptyrw
-;         ; prints a row of empty
-;         ; characters
-;         ; (row is 30 chars in this case)
-;         ; starting from memory indexed indirectly using tmpalo/hi
-
-;         ; store .Y to stack
-;         tya
-;         pha
-
-;         ldy #$00
-;emptyrw1
-;         lda #$20  ; empty space
-;         sta (tmpalo),y
-;         iny
-;         cpy #$1e  ; 30 chars row here
-;         bne emptyrw1 
-
-;         ; restore .Y from stack
-;         pla
-;         tay
-
-;         rts
 ;------------------------------------
 incrow
           ; tmpalo/hi points to screen
@@ -1937,209 +1847,70 @@ incrow
           adc #$00
           sta tmpahi
           rts
-;------------------------------------
-; prints the character set being used
-; to the right side of screen
-;------------------------------------
-;printchs
-;         ; prints the characters 128-255 
-
-;         ; set the start location in screen memory
-;         ; start from column 30 ($041d) and print 10
-;         ; chars per row
-
-;         lda #<scrmemitms
-;         sta tmpalo
-;         lda #>scrmemitms
-;         sta tmpahi
-
-;         ldy #$00
-;         ldx #$80
-;printchs1
-;         txa
-;         sta (tmpalo),y
-;         iny
-;         cpy #$0a
-;         bne printchs2 
-
-;         ; 10 columns done
-;         ldy #$00
-;         ; add a row to screen memory pointer
-;         clc 
-;         lda tmpalo
-;         adc #$28
-;         sta tmpalo
-;         lda tmpahi
-;         adc #$00
-;         sta tmpahi
-;         
-;printchs2 inx
-;         bne printchs1
-
-;         rts
 
 ;------------------------------------
 ; Set the character group settings.
-; Point tmpalo/-hi to the character
-; data store memory where the selected
+; Point tmpblo/-hi to the character
+; data where the selected
 ; character group starts from.
 ; set the number of characters in 
 ; selected character group to chgrpcnt 
 ;------------------------------------
-setchrgrpsettings
-
+setchrgrp
           ; - check which bit is set
-          ;   in the setchrgrps
+          ;   in the setchrgrp
           ; - calculate the pointer
           ;   to the start of character
           ;   group data in the character
-          ;   set store memory 
+          ;   set memory 
           ; - set the minchind, maxchind,
           ;   chgrpcnt and curchind accordingly
-          ;   (minchind and curchind is set always to #$80?)
           ;   maxchind is always minchind + chrgrpcnt
 
-          ; set the tmpalo/-hi to the start of character
-          ; store memory
-          ;lda #<chrdataed1 
-          ;sta tmpalo
-          ;lda #>chrdataed1
-          ;sta tmpahi
+          ; set the tmpblo/-hi to the start of character memory
+          lda #<chrdata1
+          sta tmpblo
+          lda #>chrdata1
+          sta tmpbhi
+
+          ldx #$00
 
           lda chrgrps
-          lsr
-          bcc setchrgrps_fl
+          ; check that ctmp is not used in called subroutines for anything
+          sta ctmp
 
-          lda chgrp_bg2
+          ldy #$08 ; add 8 times in add2tmpb, each character needs 8 bytes
+
+          ; go through the character group definitions until the selected character group 
+          ; is found, the loop is needed since we need to add to tmpblo/-hi memory pointer
+          ; the memory length needed for each previous character group
+
+setchrgrp_loop
+          lda chrgrplen,x
           sta chgrpcnt 
-
-          jmp setchrgrps_cnt
-
-setchrgrps_fl
-
-          ldx #$08 ; add 8 times, each character needs 8 bytes
-          lda chgrp_bg2
-          jsr add2tmpa
-          
-          lsr
-          bcc setchrgrps_wl
-
-          lda chgrp_fl2
-          sta chgrpcnt 
-
-          jmp setchrgrps_cnt
-
-setchrgrps_wl
-
-          lda chgrp_fl2
-          jsr add2tmpa
-
-          lsr
-          bcc setchrgrps_sc
-
-          lda chgrp_wl2
-          sta chgrpcnt 
-
-          jmp setchrgrps_cnt
-
-setchrgrps_sc
-
-          lda chgrp_fl2
-          jsr add2tmpa
-
-          lsr
-          bcc setchrgrps_lh
-
-          lda chgrp_sc2
-          sta chgrpcnt 
-
-          jmp setchrgrps_cnt
-
-setchrgrps_lh
-
-          lda chgrp_sc2
-          jsr add2tmpa
-
-          lsr
-          bcc setchrgrps_ev
-
-          lda chgrp_lh2
-          sta chgrpcnt 
-
-          jmp setchrgrps_cnt
-
-setchrgrps_ev
-
-          lda chgrp_lh2
-          jsr add2tmpa
-
-          lsr
-          bcc setchrgrps_cl
-
-          lda chgrp_ev2
-          sta chgrpcnt 
-
-          jmp setchrgrps_cnt
-
-setchrgrps_cl
-
-          lda chgrp_ev2
-          jsr add2tmpa
-
-          lsr
-          bcc setchrgrps_co
-
-          lda chgrp_cl2
-          sta chgrpcnt 
-
-          jmp setchrgrps_cnt
-
-setchrgrps_co
-
-          lda chgrp_cl2
-          jsr add2tmpa
-
-          lsr
-          bcc setchrgrps_x
-
-          lda chgrp_co2
-          sta chgrpcnt 
-
-setchrgrps_cnt
-
-
-          rts
-;------------------------------------
-; Sets the selected character groups
-; to screen and work memory.
-;------------------------------------
-setchrgrps
-
-          ; Set tmpalo/-hi to point to start of the memory
-          ; that will be copied (source memory) 
-          ; chgrpcnt will contain the number of characters
-          ; that will be copied.
-          jsr setchrgrpsettings
-
-          ; Set tmpclo/-hi to point in the target memory
-          ; (character editor work memory)
-          lda #<chrdata2
-          sta tmpclo
-          lda #>chrdata2
-          sta tmpchi 
-
-          ; min character index starts from half the character set
-          ; the lower half is used for UI characters
-          ; and the character group being edited is assigned
-          ; to character values $80 and greater
-          lda #$80
+          lda chrgrpsta,x 
           sta minchind 
+
+          lsr ctmp
+          bcs setchrgrp_cont
+          lda chrgrplen,x
+          jsr add2tmpb
+          inx
+          cpx nochrgrps 
+          bne setchrgrp_loop
+
+setchrgrp_cont
+
+          clc
+          lda minchind
           sta curchind
+          adc chgrpcnt
+          sbc #$01
+          sta maxchind
 
-          ; - print the selected character
-          ;   group to screen 
-
-setchrgrps_x
+          jsr clearscr
+          jsr prnchrset
+          jsr chredit
 
           rts
 
@@ -2165,23 +1936,6 @@ memcpybytes
 ;------------------------------------
 memcpypages
           rts
-;------------------------------------
-; Toggle the character memory half being
-; edited to edit memory buffer          
-;------------------------------------
-; deprecated
-;tgchedmem 
-;         ; store first the current half
-;         jsr stchedmem
-;         ; change the state
-;         lda editstate
-;         eor #$01
-;         sta editstate
-;         ; copy the other half to "work memory"
-;         jsr cpchedmem
-;         ; render the selected character to editor
-;         jsr chredit
-;         rts
 ;------------------------------------
 ;mvchredmem
           ; Copies x pages of character memory 
@@ -3172,3 +2926,25 @@ txtmenu   .byte $01,$04,$04,$15
           .byte $00
 ;------------------------------------
           
+; Initial character group data.
+; this will be copied to actual character group
+; data location on startup and will be saved
+; to game data and restored with game data.
+
+; byte|chargroup
+; -------------------
+; 1   |background 
+; 2   |floor
+; 3   |wall
+; 4   |stair
+; 5   |lethal
+; 6   |elevator
+; 7   |climbable
+; 8   |collectible 
+
+dchrgrpstart
+          .byte $00,$40,$70,$a0,$b8,$c8,$d8,$f0
+dchrgrplen
+          ;      64 +48 +48 +24 +16 +16 +24 +16 = 256 
+          .byte $40,$30,$30,$18,$10,$10,$18,$10
+
