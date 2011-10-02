@@ -315,7 +315,7 @@ bgcolor2            = $d023
 ;   select previous character from editable characters
 ; inccurch
 ;   select next character from editable characters
-; chredit
+; setselch
 ;   Renders character magnified to 8:1
 ; rstcrsr
 ;   restore the previous state of cursor
@@ -347,8 +347,6 @@ bgcolor2            = $d023
 ;   toggle the character memory half being
 ; mvchredmem
 ;   copies 1k of character memory being edited to/from edit memory bank
-; stchedmem
-;   stores the half of character set being edited from chrdata2 to chrdadaed1/2
 ; dmpstdch
 ;   dumps standard character set from character generator ROM to RAM
 ; chm2colm
@@ -407,15 +405,15 @@ init
           ;  data is loaded)
           lda #$08
           sta nochrgrps 
-          ldx nochrgrps
-
+          ldx #$00
 init_loop
 
           lda dchrgrpstart,x
           sta chrgrpsta,x
           lda dchrgrplen,x
           sta chrgrplen,x
-          dex
+          inx
+          cpx nochrgrps
           bne init_loop
 
           ; load the standard character set
@@ -620,7 +618,7 @@ movchrcr_m2
           lda prgstate
           lsr
           bcc movchrcr_x
-          jsr chredit
+          jsr setselch
 
 movchrcr_x
 
@@ -679,23 +677,10 @@ chkprgstate_screenmap
 ; render main menu
 ;------------------------------------
 mainmenu
-
-          ; check if returning from editor screens
-          ; store character set half being edited first
-          ; to memory
-          lda prgstate
-          ror
-          bcc mainmenu_cont
-
-          ; store character set being edited
-          jsr stchedmem
-
-mainmenu_cont
-          
           lda #$00
           sta prgstate
           jsr clearscr
-          lda #$10
+          lda #$00
           jsr setcolmem 
           ldx #<txtmenu
           ldy #>txtmenu
@@ -723,7 +708,9 @@ inichared
           ; background character group is selected by default 
           sta chrgrps 
           jsr setchrgrp
-
+          jsr clearscr
+          jsr prnchrset
+          
           ; set the pointer to current pixel
           ; in the editor area
           lda #<chedstart
@@ -735,9 +722,7 @@ inichared
           lda #$09
           jsr setcolmem
 
-          jsr clearscr
-          jsr prnchrset
-          jsr chredit
+          jsr setselch
           rts
 
 ;------------------------------------
@@ -748,11 +733,12 @@ initileed
           lda #$02
           sta prgstate
 
-          lda #$00
-          sta minchind
-          sta curchind
-          lda #$ff
-          sta maxchind
+          ; todo : not needed here anymore?
+          ;lda #$00
+          ;sta minchind
+          ;sta curchind
+          ;lda #$ff
+          ;sta maxchind
 
           ; set the pointer to current character
           ; in the character memory top half
@@ -767,6 +753,7 @@ initileed
           jsr clearscr
           jsr prntiles
           jsr prnchrset
+
           rts
 
 ;------------------------------------
@@ -1250,7 +1237,7 @@ clrselch
           ; and the character editor
           rts
 ;------------------------------------
-chredit
+setselch
           ; Renders character magnified 
           ; to 8:1 (a character presents each bit in character data)
           ; print selected character to screen
@@ -1307,7 +1294,13 @@ setselch3
           cpy #$08
           bne setselch1
 
+          ; before callings shwcrsr, set tmpdlo/-hi
+          lda #<chedstart
+          sta tmpdlo
+          lda #>chedstart
+          sta tmpdhi
           jsr shwcrsr
+
           rts
 ;------------------------------------
 rstcrsr
@@ -1321,9 +1314,10 @@ rstcrsr
 
           rts
 ;------------------------------------
+; the current location of editor cursor
+; is set to tmpdlo / -hi
+;------------------------------------
 shwcrsr   
-          ; the current location of editor cursor
-          ; is set to tmpdlo / -hi
 
           ldy #$00
 
@@ -1333,7 +1327,6 @@ shwcrsr
 
           lda cursora
           sta (tmpdlo),y
-          rts
 
           ; reset tmpdlo/-hi
 
@@ -1712,7 +1705,7 @@ tglchrst1 ; multi color
 
           jsr shwcrsr
           
-tglchrst2 jsr chredit
+tglchrst2 jsr setselch
           rts
 
 ;------------------------------------
@@ -1813,20 +1806,21 @@ setcolmem_2
 ;------------------------------------
 prnchrset
 
+
           ; Set the start character regarding 
           ; to value in minchind
 
           lda minchind
-          ldx #$00
+          ldx #$ff
 
 prnchrset_loop
 
-          sta scrmemp1,x
           inx
-          adc #$01
           cpx maxchind
-          ; exit loop when maxchind passed 
           bcs prnchrset_x
+
+          sta scrmemp1,x
+          adc #$01
           jmp prnchrset_loop
 
 prnchrset_x
@@ -1905,12 +1899,12 @@ setchrgrp_cont
           lda minchind
           sta curchind
           adc chgrpcnt
-          sbc #$01
+          ;sbc #$01
           sta maxchind
 
           jsr clearscr
           jsr prnchrset
-          jsr chredit
+          jsr setselch
 
           rts
 
@@ -2096,13 +2090,6 @@ memcpypages
 
 ;         rts
 
-;------------------------------------
-; Store the character set being edited
-; from "work memory" to "store memory".
-;------------------------------------
-stchedmem
-
-          rts
 
 ;------------------------------------
 ; stores the half of character set being
@@ -2587,7 +2574,7 @@ px1off1    ; roll bit to right until the right bit reached
           and (tmpblo),y
           sta (tmpblo),y
           
-          jsr chredit
+          jsr setselch
 
           rts
 
@@ -2636,7 +2623,7 @@ px1on1    ; roll bit to right until the right bit reached
           ora (tmpblo),y
           sta (tmpblo),y
           
-          jsr chredit
+          jsr setselch
 
           rts
 ;------------------------------------
@@ -2686,7 +2673,7 @@ pxmc1off2 ; A contains the filter, set the bit pair to 00
           and (tmpblo),y
           sta (tmpblo),y
           
-          jsr chredit
+          jsr setselch
 
           rts
 ;------------------------------------
@@ -2742,7 +2729,7 @@ pxmc1on2  ; A contains the filter, set the bit pair
           ora (tmpblo),y
           sta (tmpblo),y
           
-          jsr chredit
+          jsr setselch
 
           rts
 
